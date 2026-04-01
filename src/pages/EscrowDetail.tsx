@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Send, AlertTriangle, Wallet } from "lucide-react";
+import { Send, AlertTriangle, Wallet, Copy } from "lucide-react";
 
 export default function EscrowDetail() {
   const { id } = useParams();
@@ -21,12 +21,12 @@ export default function EscrowDetail() {
   const [disputeReason, setDisputeReason] = useState("");
   const [showDispute, setShowDispute] = useState(false);
   const [txHash, setTxHash] = useState("");
+  const [wallets, setWallets] = useState<any[]>([]);
   const messagesEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!id) return;
     fetchData();
-    // Subscribe to messages
     const channel = supabase
       .channel(`escrow-${id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "escrow_messages", filter: `escrow_id=eq.${id}` },
@@ -40,16 +40,17 @@ export default function EscrowDetail() {
   }, [messages]);
 
   const fetchData = async () => {
-    const [escrowRes, msgsRes, pmtsRes] = await Promise.all([
+    const [escrowRes, msgsRes, pmtsRes, walletsRes] = await Promise.all([
       supabase.from("escrows").select("*").eq("id", id!).single(),
       supabase.from("escrow_messages").select("*").eq("escrow_id", id!).order("created_at"),
       supabase.from("payments").select("*").eq("escrow_id", id!).order("created_at"),
+      supabase.from("crypto_wallets").select("*").eq("is_active", true),
     ]);
     setEscrow(escrowRes.data);
     setMessages(msgsRes.data || []);
     setPayments(pmtsRes.data || []);
+    setWallets(walletsRes.data || []);
 
-    // Fetch profiles for participants
     if (escrowRes.data) {
       const ids = [escrowRes.data.buyer_id, escrowRes.data.seller_id].filter(Boolean);
       if (ids.length) {
@@ -71,26 +72,32 @@ export default function EscrowDetail() {
     setNewMessage("");
   };
 
+  const getMatchingWallets = () => {
+    if (!escrow) return [];
+    const ct = escrow.crypto_type;
+    return wallets.filter((w) => {
+      if (ct === "USDT") return w.crypto_name === "USDT" && w.network === "TRC20";
+      if (ct === "USDT_ERC20") return w.crypto_name === "USDT" && w.network === "ERC20";
+      return w.crypto_name === ct;
+    });
+  };
+
+  const copyAddress = (addr: string) => {
+    navigator.clipboard.writeText(addr);
+    toast.success("Address copied!");
+  };
+
   const submitPayment = async () => {
     if (!escrow || !user) return;
-    // Get wallet for this crypto
-    const { data: wallet } = await supabase
-      .from("crypto_wallets")
-      .select("wallet_address")
-      .eq("crypto_name", escrow.crypto_type)
-      .eq("is_active", true)
-      .limit(1)
-      .single();
-
-    if (!wallet) {
+    const matching = getMatchingWallets();
+    if (!matching.length) {
       toast.error("No active wallet found for this crypto");
       return;
     }
-
     const { error } = await supabase.from("payments").insert({
       escrow_id: id!,
       crypto_type: escrow.crypto_type,
-      wallet_address: wallet.wallet_address,
+      wallet_address: matching[0].wallet_address,
       amount: escrow.amount,
       tx_hash: txHash || null,
       status: "submitted" as const,
@@ -123,6 +130,7 @@ export default function EscrowDetail() {
   }
 
   const isBuyer = escrow.buyer_id === user?.id;
+  const matchingWallets = getMatchingWallets();
 
   return (
     <DashboardLayout>
@@ -156,6 +164,26 @@ export default function EscrowDetail() {
               <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border">{escrow.description}</p>
             )}
           </div>
+
+          {/* Buyer: Show wallet addresses to pay */}
+          {isBuyer && (escrow.status === "active" || escrow.status === "pending") && matchingWallets.length > 0 && (
+            <div className="glass-card p-6">
+              <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                <Wallet className="h-4 w-4 text-primary" /> Send Payment To
+              </h3>
+              {matchingWallets.map((w) => (
+                <div key={w.id} className="flex items-center justify-between bg-secondary/50 rounded-md p-3 mb-2 last:mb-0">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{w.crypto_name} — {w.network}</p>
+                    <p className="font-mono text-xs mt-1 break-all">{w.wallet_address}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => copyAddress(w.wallet_address)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Payment action (buyer) */}
           {isBuyer && escrow.status === "active" && (
