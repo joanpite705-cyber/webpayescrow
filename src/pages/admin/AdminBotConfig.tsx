@@ -83,6 +83,17 @@ export default function AdminBotConfig() {
     }
     setWebhookLoading(false);
   };
+  const registerCommands = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot", {
+        body: { action: "set_commands" },
+      });
+      if (error) toast.error(error.message);
+      else toast.success("Bot commands registered!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   return (
     <DashboardLayout>
