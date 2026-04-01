@@ -148,6 +148,10 @@ export default function AdminBotConfig() {
               <XCircle className="h-4 w-4" /> Remove Webhook
             </Button>
 
+            <Button variant="secondary" onClick={registerCommands} disabled={webhookLoading} className="w-full gap-2">
+              <Bot className="h-4 w-4" /> Register Bot Commands
+            </Button>
+
             <div className="text-xs text-muted-foreground mt-2 p-3 rounded bg-secondary/30">
               <p className="font-medium mb-1">Webhook URL:</p>
               <code className="break-all text-[10px]">
