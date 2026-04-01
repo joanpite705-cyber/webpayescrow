@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Copy, Wallet } from "lucide-react";
 
 export default function CreateEscrow() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [wallets, setWallets] = useState<any[]>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -21,14 +23,36 @@ export default function CreateEscrow() {
     crypto_type: "USDT",
     role: "buyer" as "buyer" | "seller",
     counterpart: "",
+    seller_wallet_address: "",
+    seller_network: "",
   });
+
+  useEffect(() => {
+    fetchWallets();
+  }, []);
+
+  const fetchWallets = async () => {
+    const { data } = await supabase.from("crypto_wallets").select("*").eq("is_active", true);
+    setWallets(data || []);
+  };
+
+  // Get platform wallets matching selected crypto (for buyer to see)
+  const matchingWallets = wallets.filter((w) => {
+    if (form.crypto_type === "USDT") return w.crypto_name === "USDT" && w.network === "TRC20";
+    if (form.crypto_type === "USDT_ERC20") return w.crypto_name === "USDT" && w.network === "ERC20";
+    return w.crypto_name === form.crypto_type;
+  });
+
+  const copyAddress = (addr: string) => {
+    navigator.clipboard.writeText(addr);
+    toast.success("Address copied!");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
 
-    // Find counterpart by telegram username
     const { data: counterpartProfile } = await supabase
       .from("profiles")
       .select("id")
@@ -58,19 +82,19 @@ export default function CreateEscrow() {
       escrowData.buyer_id = counterpartProfile.id;
     }
 
-    const { error } = await supabase.from("escrows").insert(escrowData);
+    const { data: escrowResult, error } = await supabase.from("escrows").insert(escrowData).select().single();
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Escrow created!");
-      navigate("/dashboard/escrows");
+      navigate(`/dashboard/escrows/${escrowResult.id}`);
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="max-w-xl">
+      <div className="max-w-2xl">
         <h1 className="text-2xl font-bold mb-2">Create Escrow</h1>
         <p className="text-muted-foreground mb-8">Set up a new trade with another user.</p>
 
@@ -126,6 +150,57 @@ export default function CreateEscrow() {
                 </Select>
               </div>
             </div>
+
+            {/* BUYER: Show platform wallet addresses to send payment to */}
+            {form.role === "buyer" && matchingWallets.length > 0 && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                  <Wallet className="h-4 w-4 text-primary" /> Payment Wallet{matchingWallets.length > 1 ? 's' : ''}
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">Send your payment to one of these addresses after the escrow is created:</p>
+                {matchingWallets.map((w) => (
+                  <div key={w.id} className="flex items-center justify-between bg-background/50 rounded-md p-3 mb-2 last:mb-0">
+                    <div>
+                      <p className="text-xs text-muted-foreground">{w.crypto_name} — {w.network}</p>
+                      <p className="font-mono text-xs mt-1 break-all">{w.wallet_address}</p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => copyAddress(w.wallet_address)}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* SELLER: Enter their receive wallet */}
+            {form.role === "seller" && (
+              <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                  <Wallet className="h-4 w-4 text-accent" /> Your Receiving Wallet
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">Where you want to receive payment after the trade completes:</p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <Label className="text-xs">Network</Label>
+                    <Select value={form.seller_network} onValueChange={(v) => setForm({ ...form, seller_network: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select network" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TRC20">TRC20</SelectItem>
+                        <SelectItem value="ERC20">ERC20</SelectItem>
+                        <SelectItem value="Bitcoin">Bitcoin</SelectItem>
+                        <SelectItem value="Ethereum">Ethereum</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Wallet Address</Label>
+                    <Input value={form.seller_wallet_address}
+                      onChange={(e) => setForm({ ...form, seller_wallet_address: e.target.value })}
+                      placeholder="Your wallet address" className="mt-1" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating..." : "Create Escrow"}
