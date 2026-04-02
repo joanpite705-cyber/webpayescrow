@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight } from "lucide-react";
+import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const userNav = [
