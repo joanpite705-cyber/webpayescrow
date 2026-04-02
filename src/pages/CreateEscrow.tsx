@@ -9,34 +9,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Wallet } from "lucide-react";
+import { Copy, Wallet, Info } from "lucide-react";
+import { t, getUserLanguage } from "@/lib/i18n";
 
 export default function CreateEscrow() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const lang = getUserLanguage();
   const [loading, setLoading] = useState(false);
   const [wallets, setWallets] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    amount: "",
-    crypto_type: "USDT",
-    role: "buyer" as "buyer" | "seller",
-    counterpart: "",
-    seller_wallet_address: "",
-    seller_network: "",
+    title: "", description: "", amount: "", crypto_type: "USDT",
+    role: "buyer" as "buyer" | "seller", counterpart: "",
+    seller_wallet_address: "", seller_network: "",
   });
 
   useEffect(() => {
-    fetchWallets();
+    Promise.all([
+      supabase.from("crypto_wallets").select("*").eq("is_active", true),
+      supabase.from("platform_settings").select("*").eq("id", 1).single(),
+    ]).then(([w, s]) => {
+      setWallets(w.data || []);
+      setSettings(s.data);
+    });
   }, []);
 
-  const fetchWallets = async () => {
-    const { data } = await supabase.from("crypto_wallets").select("*").eq("is_active", true);
-    setWallets(data || []);
-  };
-
-  // Get platform wallets matching selected crypto (for buyer to see)
   const matchingWallets = wallets.filter((w) => {
     if (form.crypto_type === "USDT") return w.crypto_name === "USDT" && w.network === "TRC20";
     if (form.crypto_type === "USDT_ERC20") return w.crypto_name === "USDT" && w.network === "ERC20";
@@ -48,16 +46,16 @@ export default function CreateEscrow() {
     toast.success("Address copied!");
   };
 
+  const feeAmount = settings ? (parseFloat(form.amount || "0") * settings.fee_percentage / 100) : 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
 
     const { data: counterpartProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("telegram_username", form.counterpart.replace("@", ""))
-      .single();
+      .from("profiles").select("id")
+      .eq("telegram_username", form.counterpart.replace("@", "")).single();
 
     if (!counterpartProfile) {
       toast.error("Counterpart not found. Make sure they have an account.");
@@ -66,12 +64,12 @@ export default function CreateEscrow() {
     }
 
     const escrowData: any = {
-      title: form.title,
-      description: form.description,
-      amount: parseFloat(form.amount),
-      crypto_type: form.crypto_type,
-      created_by: user.id,
-      status: "pending" as const,
+      title: form.title, description: form.description,
+      amount: parseFloat(form.amount), crypto_type: form.crypto_type,
+      created_by: user.id, status: "pending" as const,
+      fee_amount: feeAmount,
+      seller_wallet_address: form.role === "seller" ? form.seller_wallet_address : null,
+      seller_network: form.role === "seller" ? form.seller_network : null,
     };
 
     if (form.role === "buyer") {
@@ -84,10 +82,9 @@ export default function CreateEscrow() {
 
     const { data: escrowResult, error } = await supabase.from("escrows").insert(escrowData).select().single();
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Escrow created!");
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Escrow created! Waiting for counterpart to accept.");
       navigate(`/dashboard/escrows/${escrowResult.id}`);
     }
   };
@@ -95,50 +92,50 @@ export default function CreateEscrow() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold mb-2">Create Escrow</h1>
-        <p className="text-muted-foreground mb-8">Set up a new trade with another user.</p>
+        <h1 className="text-2xl font-bold mb-2">{t("create_escrow", lang)}</h1>
+        <p className="text-muted-foreground mb-8">Set up a new trade. The counterpart must accept before the trade begins.</p>
 
         <div className="glass-card p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>I am the</Label>
+                <Label>{t("i_am_the", lang)}</Label>
                 <Select value={form.role} onValueChange={(v: "buyer" | "seller") => setForm({ ...form, role: v })}>
                   <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="buyer">Buyer</SelectItem>
-                    <SelectItem value="seller">Seller</SelectItem>
+                    <SelectItem value="buyer">{t("buyer", lang)}</SelectItem>
+                    <SelectItem value="seller">{t("seller", lang)}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Counterpart Username</Label>
+                <Label>{t("counterpart", lang)}</Label>
                 <Input value={form.counterpart} onChange={(e) => setForm({ ...form, counterpart: e.target.value })}
                   placeholder="@username" required className="mt-1.5" />
               </div>
             </div>
 
             <div>
-              <Label>Title</Label>
+              <Label>{t("title", lang)}</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Netflix Account" required className="mt-1.5" />
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t("description", lang)}</Label>
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Describe what's being sold..." className="mt-1.5" rows={3} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Amount</Label>
+                <Label>{t("amount", lang)}</Label>
                 <Input type="number" step="0.00000001" value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   placeholder="0.00" required className="mt-1.5" />
               </div>
               <div>
-                <Label>Crypto</Label>
+                <Label>{t("crypto", lang)}</Label>
                 <Select value={form.crypto_type} onValueChange={(v) => setForm({ ...form, crypto_type: v })}>
                   <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -151,13 +148,21 @@ export default function CreateEscrow() {
               </div>
             </div>
 
-            {/* BUYER: Show platform wallet addresses to send payment to */}
+            {/* Fee info */}
+            {settings && parseFloat(form.amount || "0") > 0 && (
+              <div className="rounded-lg border border-muted p-3 flex items-center gap-2 text-sm">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{t("fee", lang)}: <strong className="text-foreground">{feeAmount.toFixed(8)} {form.crypto_type}</strong> ({settings.fee_percentage}%)</span>
+              </div>
+            )}
+
+            {/* BUYER: Show platform wallet addresses */}
             {form.role === "buyer" && matchingWallets.length > 0 && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                 <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                   <Wallet className="h-4 w-4 text-primary" /> Payment Wallet{matchingWallets.length > 1 ? 's' : ''}
                 </h4>
-                <p className="text-xs text-muted-foreground mb-3">Send your payment to one of these addresses after the escrow is created:</p>
+                <p className="text-xs text-muted-foreground mb-3">Send your payment to this address after the escrow is accepted:</p>
                 {matchingWallets.map((w) => (
                   <div key={w.id} className="flex items-center justify-between bg-background/50 rounded-md p-3 mb-2 last:mb-0">
                     <div>
@@ -172,18 +177,18 @@ export default function CreateEscrow() {
               </div>
             )}
 
-            {/* SELLER: Enter their receive wallet */}
+            {/* SELLER: Enter receive wallet */}
             {form.role === "seller" && (
               <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
                 <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                   <Wallet className="h-4 w-4 text-accent" /> Your Receiving Wallet
                 </h4>
-                <p className="text-xs text-muted-foreground mb-3">Where you want to receive payment after the trade completes:</p>
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">Where you want to receive payment after trade completes:</p>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Network</Label>
+                    <Label className="text-xs">{t("network", lang)}</Label>
                     <Select value={form.seller_network} onValueChange={(v) => setForm({ ...form, seller_network: v })}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select network" /></SelectTrigger>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="TRC20">TRC20</SelectItem>
                         <SelectItem value="ERC20">ERC20</SelectItem>
@@ -193,7 +198,7 @@ export default function CreateEscrow() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Wallet Address</Label>
+                    <Label className="text-xs">{t("wallet_address", lang)}</Label>
                     <Input value={form.seller_wallet_address}
                       onChange={(e) => setForm({ ...form, seller_wallet_address: e.target.value })}
                       placeholder="Your wallet address" className="mt-1" />
@@ -203,7 +208,7 @@ export default function CreateEscrow() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating..." : "Create Escrow"}
+              {loading ? t("creating", lang) : t("create_escrow", lang)}
             </Button>
           </form>
         </div>

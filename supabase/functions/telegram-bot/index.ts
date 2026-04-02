@@ -9,7 +9,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// In-memory conversation state (per-invocation; for persistent state, use DB)
 const userState: Record<number, { step: string; role?: string; data?: any }> = {};
 
 async function getBotToken(): Promise<string | null> {
@@ -17,9 +16,21 @@ async function getBotToken(): Promise<string | null> {
   return data?.bot_token || null;
 }
 
+async function getSettings(): Promise<any> {
+  const { data } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
+  return data || { signup_link: '', fee_percentage: 2, safety_message: '' };
+}
+
 async function getWebAppUrl(): Promise<string> {
-  const { data } = await supabase.from('bot_config').select('bot_username').eq('is_active', true).limit(1).single();
-  return Deno.env.get('WEB_APP_URL') || 'https://webpayescrow.lovable.app';
+  const settings = await getSettings();
+  if (settings.signup_link) {
+    // Extract base URL from signup link
+    try {
+      const url = new URL(settings.signup_link);
+      return `${url.protocol}//${url.host}`;
+    } catch { /* ignore */ }
+  }
+  return 'https://webpayescrow.lovable.app';
 }
 
 async function sendTelegram(token: string, method: string, body: any) {
@@ -39,53 +50,34 @@ async function handleUpdate(update: any, token: string) {
     await handleCallback(callbackQuery, token);
     return;
   }
-
   if (!message) return;
 
   const chatId = message.chat.id;
   const text = message.text || '';
   const username = message.from?.username || '';
 
-  // Handle commands
   if (text.startsWith('/')) {
     const command = text.split(' ')[0].split('@')[0].toLowerCase();
-
     switch (command) {
-      case '/start':
-        await handleStart(chatId, username, token);
-        return;
-      case '/help':
-        await handleHelp(chatId, token);
-        return;
-      case '/myescrows':
-        await handleMyEscrows(chatId, username, token);
-        return;
-      case '/newescrow':
-        await handleNewEscrow(chatId, token);
-        return;
-      case '/status':
-        await handleStatus(chatId, username, token);
-        return;
-      case '/wallets':
-        await handleWallets(chatId, token);
-        return;
+      case '/start': return handleStart(chatId, username, token);
+      case '/help': return handleHelp(chatId, token);
+      case '/myescrows': return handleMyEscrows(chatId, username, token);
+      case '/newescrow': return handleNewEscrow(chatId, token);
+      case '/status': return handleStatus(chatId, username, token);
+      case '/wallets': return handleWallets(chatId, token);
+      case '/resetpassword': return handleResetPassword(chatId, token);
       default:
-        await sendTelegram(token, 'sendMessage', {
-          chat_id: chatId,
-          text: '❓ Unknown command. Use /help to see available commands.',
-        });
-        return;
+        return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❓ Unknown command. Use /help.' });
     }
   }
 
-  // Handle conversation state (e.g., counterpart username input)
+  // Conversation state
   const state = userState[chatId];
   if (state) {
     await handleConversation(chatId, text, username, token);
     return;
   }
 
-  // Default: show help
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
     text: 'Use the buttons or type /help to see available commands.',
@@ -100,23 +92,25 @@ async function handleUpdate(update: any, token: string) {
 
 async function handleStart(chatId: number, username: string, token: string) {
   const webUrl = await getWebAppUrl();
+  const settings = await getSettings();
+  const signupUrl = settings.signup_link || `${webUrl}/signup`;
 
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
-    text: `🛡️ *Welcome to EscrowBot!*\n\nSecure crypto escrow for digital trades.\n\n👤 Your username: @${username}\n🔑 Chat ID: \`${chatId}\`\n\n📱 *Sign up on the web app* to complete your account, then come back here to manage your escrows!\n\nChoose an action:`,
+    text: `🛡️ *Welcome to EscrowBot!*\n\nSecure crypto escrow for P2P trades.\n\n👤 Username: @${username}\n\n⚠️ _${settings.safety_message || 'Never trade outside the platform.'}_\n\nChoose an action:`,
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🤝 Start Escrow', callback_data: 'start_escrow' }],
-        [{ text: '📋 My Escrows', callback_data: 'my_escrows' }],
-        [{ text: '💰 View Wallets', callback_data: 'wallets' }],
-        [{ text: '🌐 Open Web App', url: webUrl }],
+        [{ text: '🤝 New Escrow', callback_data: 'start_escrow' }, { text: '📋 My Escrows', callback_data: 'my_escrows' }],
+        [{ text: '💰 Wallets', callback_data: 'wallets' }, { text: '👤 Status', callback_data: 'status' }],
+        [{ text: '🔑 Reset Password', callback_data: 'reset_password' }],
+        [{ text: '🌐 Sign Up / Open Web', url: signupUrl }],
         [{ text: '❓ Help', callback_data: 'help' }],
       ],
     },
   });
 
-  // Link chat_id to profile
+  // Link chat_id
   if (username) {
     await supabase.from('profiles').update({ telegram_chat_id: String(chatId) }).eq('telegram_username', username);
   }
@@ -125,13 +119,9 @@ async function handleStart(chatId: number, username: string, token: string) {
 async function handleHelp(chatId: number, token: string) {
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
-    text: `❓ *EscrowBot Commands*\n\n/start — Main menu\n/help — Show this help\n/newescrow — Create a new escrow\n/myescrows — View your escrows\n/status — Your account status\n/wallets — View payment wallets\n\n🛡️ *How it works:*\n1️⃣ Both parties register on the web app\n2️⃣ Create an escrow (buyer or seller)\n3️⃣ Buyer sends crypto to the platform wallet\n4️⃣ Admin verifies the payment\n5️⃣ Seller delivers the goods\n6️⃣ Buyer confirms receipt → trade complete\n\n*Supported Crypto:*\n• BTC (Bitcoin)\n• ETH (Ethereum)\n• USDT (TRC20 & ERC20)`,
+    text: `❓ *EscrowBot Commands*\n\n/start — Main menu\n/help — This help\n/newescrow — Create escrow\n/myescrows — Your escrows\n/status — Account info\n/wallets — Payment wallets\n/resetpassword — Reset web password\n\n🛡️ *How it works:*\n1️⃣ Create escrow (buyer/seller)\n2️⃣ Counterpart accepts → 30 min timer starts\n3️⃣ Buyer sends crypto → marks paid\n4️⃣ Admin verifies payment\n5️⃣ Seller releases → trade complete\n6️⃣ Both parties rate each other\n\n*Supported:* BTC, ETH, USDT (TRC20/ERC20)`,
     parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
-      ],
-    },
+    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
   });
 }
 
@@ -140,58 +130,52 @@ async function handleMyEscrows(chatId: number, username: string, token: string) 
   const webUrl = await getWebAppUrl();
 
   if (!profile) {
-    await sendTelegram(token, 'sendMessage', {
+    const settings = await getSettings();
+    return sendTelegram(token, 'sendMessage', {
       chat_id: chatId,
-      text: '❌ You need to register on the web app first!\n\nSign up with your Telegram username to link your account.',
-      reply_markup: { inline_keyboard: [[{ text: '🌐 Sign Up', url: webUrl + '/signup' }]] },
+      text: '❌ Account not linked. Sign up on the web first!',
+      reply_markup: { inline_keyboard: [[{ text: '🌐 Sign Up', url: settings.signup_link || `${webUrl}/signup` }]] },
     });
-    return;
   }
 
   const { data: escrows } = await supabase.from('escrows').select('*')
     .or(`buyer_id.eq.${profile.id},seller_id.eq.${profile.id}`)
-    .order('created_at', { ascending: false }).limit(5);
+    .order('created_at', { ascending: false }).limit(10);
 
   if (!escrows?.length) {
-    await sendTelegram(token, 'sendMessage', {
-      chat_id: chatId,
-      text: '📋 You have no escrows yet.\n\nStart one using the button below!',
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: '📋 No escrows yet.',
       reply_markup: { inline_keyboard: [[{ text: '🤝 Start Escrow', callback_data: 'start_escrow' }]] },
     });
-    return;
   }
 
   const emoji: Record<string, string> = {
     pending: '⏳', active: '🟢', paid: '💳', confirmed: '✅', completed: '🎉', disputed: '⚠️', cancelled: '❌',
   };
 
-  let msg = '📋 *Your Recent Escrows:*\n\n';
+  let msg = '📋 *Your Escrows:*\n\n';
+  const buttons: any[] = [];
   escrows.forEach((e) => {
-    msg += `${emoji[e.status] || '•'} *${e.title}*\n   💰 ${e.amount} ${e.crypto_type} — _${e.status.toUpperCase()}_\n\n`;
+    const role = e.buyer_id === profile.id ? '🛒' : '💰';
+    msg += `${emoji[e.status] || '•'} ${role} *${e.title}*\n   💰 ${e.amount} ${e.crypto_type} — _${e.status}_\n\n`;
+    if (['pending', 'active', 'paid', 'confirmed', 'disputed'].includes(e.status)) {
+      buttons.push([{ text: `📌 ${e.title}`, url: `${webUrl}/dashboard/escrows/${e.id}` }]);
+    }
   });
 
-  await sendTelegram(token, 'sendMessage', {
-    chat_id: chatId,
-    text: msg,
-    parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '🌐 View on Web', url: webUrl + '/dashboard/escrows' }],
-        [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
-      ],
-    },
-  });
+  buttons.push([{ text: '◀️ Main Menu', callback_data: 'back_main' }]);
+
+  await sendTelegram(token, 'sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown', reply_markup: { inline_keyboard: buttons } });
 }
 
 async function handleNewEscrow(chatId: number, token: string) {
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
-    text: '🤝 *Start New Escrow*\n\nAre you the buyer or seller?',
+    text: '🤝 *New Escrow*\n\nAre you the buyer or seller?',
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [
-        [{ text: '🛒 I\'m the Buyer', callback_data: 'role_buyer' }],
-        [{ text: '💰 I\'m the Seller', callback_data: 'role_seller' }],
+        [{ text: '🛒 Buyer', callback_data: 'role_buyer' }, { text: '💰 Seller', callback_data: 'role_seller' }],
         [{ text: '◀️ Back', callback_data: 'back_main' }],
       ],
     },
@@ -203,22 +187,22 @@ async function handleStatus(chatId: number, username: string, token: string) {
   const webUrl = await getWebAppUrl();
 
   if (!profile) {
-    await sendTelegram(token, 'sendMessage', {
+    const settings = await getSettings();
+    return sendTelegram(token, 'sendMessage', {
       chat_id: chatId,
-      text: `⚠️ *Account Not Linked*\n\nYour Telegram (@${username}) is not linked to a web account yet.\n\nSign up on the web app with username: \`${username}\``,
+      text: `⚠️ Account not linked.\n\nSign up with username: @${username}`,
       parse_mode: 'Markdown',
-      reply_markup: { inline_keyboard: [[{ text: '🌐 Sign Up', url: webUrl + '/signup' }]] },
+      reply_markup: { inline_keyboard: [[{ text: '🌐 Sign Up', url: settings.signup_link || `${webUrl}/signup` }]] },
     });
-    return;
   }
 
-  const { count: escrowCount } = await supabase.from('escrows')
-    .select('*', { count: 'exact', head: true })
+  const { count } = await supabase.from('escrows').select('*', { count: 'exact', head: true })
     .or(`buyer_id.eq.${profile.id},seller_id.eq.${profile.id}`);
 
+  const verified = profile.is_verified ? '✅ Verified' : '❌ Not verified';
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
-    text: `👤 *Your Account*\n\n📛 Name: ${profile.display_name || '—'}\n📱 Telegram: @${username}\n🔗 Linked: ✅ Yes\n📊 Total Escrows: ${escrowCount || 0}`,
+    text: `👤 *Your Account*\n\n📛 ${profile.display_name || username}\n📱 @${username}\n${verified}\n👍 ${profile.positive_ratings || 0}  👎 ${profile.negative_ratings || 0}\n📊 Escrows: ${count || 0}`,
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
   });
@@ -226,25 +210,22 @@ async function handleStatus(chatId: number, username: string, token: string) {
 
 async function handleWallets(chatId: number, token: string) {
   const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
-
   if (!wallets?.length) {
-    await sendTelegram(token, 'sendMessage', {
-      chat_id: chatId,
-      text: '💰 No payment wallets are configured yet. Contact admin.',
-    });
-    return;
+    return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '💰 No wallets configured. Contact admin.' });
   }
+  let msg = '💰 *Payment Wallets:*\n\n';
+  wallets.forEach((w) => { msg += `*${w.crypto_name}* (${w.network})\n\`${w.wallet_address}\`\n\n`; });
+  await sendTelegram(token, 'sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] } });
+}
 
-  let msg = '💰 *Available Payment Wallets:*\n\n';
-  wallets.forEach((w) => {
-    msg += `*${w.crypto_name}* (${w.network})\n\`${w.wallet_address}\`\n\n`;
-  });
-
+async function handleResetPassword(chatId: number, token: string) {
+  const webUrl = await getWebAppUrl();
   await sendTelegram(token, 'sendMessage', {
     chat_id: chatId,
-    text: msg,
+    text: '🔑 *Reset Password*\n\nClick below to reset your web login password:',
     parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    reply_markup: { inline_keyboard: [[{ text: '🔑 Reset Password', url: `${webUrl}/reset-password` }], [{ text: '◀️ Back', callback_data: 'back_main' }]] },
   });
 }
 
@@ -255,24 +236,18 @@ async function handleConversation(chatId: number, text: string, username: string
   if (state.step === 'awaiting_counterpart') {
     const counterpart = text.replace('@', '').trim();
     if (!counterpart) {
-      await sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Please enter a valid username.' });
-      return;
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Enter a valid username.' });
     }
-
     const webUrl = await getWebAppUrl();
-
-    // Direct user to web app to complete escrow creation
     delete userState[chatId];
     await sendTelegram(token, 'sendMessage', {
       chat_id: chatId,
-      text: `✅ Got it! You're the *${state.role}* and your counterpart is @${counterpart}.\n\n🌐 Complete the escrow setup on the web app to set the amount, crypto type, and details.`,
+      text: `✅ You're the *${state.role}*, counterpart: @${counterpart}.\n\n🌐 Complete on the web app:`,
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🌐 Create Escrow on Web', url: webUrl + '/dashboard/create' }],
-          [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
-        ],
-      },
+      reply_markup: { inline_keyboard: [
+        [{ text: '🌐 Create Escrow', url: `${webUrl}/dashboard/escrows/new` }],
+        [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+      ] },
     });
   }
 }
@@ -285,37 +260,21 @@ async function handleCallback(query: any, token: string) {
   await sendTelegram(token, 'answerCallbackQuery', { callback_query_id: query.id });
 
   switch (data) {
-    case 'start_escrow':
-      await handleNewEscrow(chatId, token);
-      break;
-
+    case 'start_escrow': return handleNewEscrow(chatId, token);
     case 'role_buyer':
     case 'role_seller': {
       const role = data === 'role_buyer' ? 'buyer' : 'seller';
       userState[chatId] = { step: 'awaiting_counterpart', role };
-      await sendTelegram(token, 'sendMessage', {
-        chat_id: chatId,
-        text: `You selected: *${role.toUpperCase()}*\n\n📝 Please send the counterpart's Telegram username (without @):`,
-        parse_mode: 'Markdown',
+      return sendTelegram(token, 'sendMessage', {
+        chat_id: chatId, text: `You: *${role.toUpperCase()}*\n\nSend counterpart's username (without @):`, parse_mode: 'Markdown',
       });
-      break;
     }
-
-    case 'my_escrows':
-      await handleMyEscrows(chatId, username, token);
-      break;
-
-    case 'wallets':
-      await handleWallets(chatId, token);
-      break;
-
-    case 'help':
-      await handleHelp(chatId, token);
-      break;
-
-    case 'back_main':
-      await handleStart(chatId, username, token);
-      break;
+    case 'my_escrows': return handleMyEscrows(chatId, username, token);
+    case 'wallets': return handleWallets(chatId, token);
+    case 'status': return handleStatus(chatId, username, token);
+    case 'help': return handleHelp(chatId, token);
+    case 'reset_password': return handleResetPassword(chatId, token);
+    case 'back_main': return handleStart(chatId, username, token);
   }
 }
 
@@ -338,66 +297,47 @@ Deno.serve(async (req) => {
       // Telegram webhook update
       if (body.update_id !== undefined) {
         await handleUpdate(body, token);
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Manual actions from web app
       const { action } = body;
 
       if (action === 'set_webhook') {
-        const webhookUrl = body.webhook_url;
         const result = await sendTelegram(token, 'setWebhook', {
-          url: webhookUrl,
-          allowed_updates: ['message', 'callback_query'],
+          url: body.webhook_url, allowed_updates: ['message', 'callback_query'],
         });
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       if (action === 'get_webhook_info') {
         const result = await sendTelegram(token, 'getWebhookInfo', {});
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       if (action === 'send_notification') {
-        const { chat_id, text } = body;
-        const result = await sendTelegram(token, 'sendMessage', {
-          chat_id, text, parse_mode: 'Markdown',
-        });
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        const result = await sendTelegram(token, 'sendMessage', { chat_id: body.chat_id, text: body.text, parse_mode: 'Markdown' });
+        return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       if (action === 'set_commands') {
         const result = await sendTelegram(token, 'setMyCommands', {
           commands: [
             { command: 'start', description: '🛡️ Main menu' },
-            { command: 'help', description: '❓ Show help and commands' },
-            { command: 'newescrow', description: '🤝 Create a new escrow' },
-            { command: 'myescrows', description: '📋 View your escrows' },
-            { command: 'status', description: '👤 Your account status' },
-            { command: 'wallets', description: '💰 View payment wallets' },
+            { command: 'help', description: '❓ Help' },
+            { command: 'newescrow', description: '🤝 New escrow' },
+            { command: 'myescrows', description: '📋 My escrows' },
+            { command: 'status', description: '👤 Account status' },
+            { command: 'wallets', description: '💰 Wallets' },
+            { command: 'resetpassword', description: '🔑 Reset password' },
           ],
         });
-        return new Response(JSON.stringify(result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
-    return new Response(JSON.stringify({ status: 'ok' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

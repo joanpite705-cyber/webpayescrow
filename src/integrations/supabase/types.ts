@@ -155,48 +155,101 @@ export type Database = {
       }
       escrows: {
         Row: {
+          accepted_at: string | null
           amount: number
           buyer_id: string | null
           created_at: string
           created_by: string
           crypto_type: string
           description: string | null
+          fee_amount: number | null
           id: string
           moderator_id: string | null
+          payment_deadline: string | null
           seller_id: string | null
+          seller_network: string | null
+          seller_wallet_address: string | null
           status: Database["public"]["Enums"]["escrow_status"]
           title: string
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
           amount?: number
           buyer_id?: string | null
           created_at?: string
           created_by: string
           crypto_type?: string
           description?: string | null
+          fee_amount?: number | null
           id?: string
           moderator_id?: string | null
+          payment_deadline?: string | null
           seller_id?: string | null
+          seller_network?: string | null
+          seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title: string
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
           amount?: number
           buyer_id?: string | null
           created_at?: string
           created_by?: string
           crypto_type?: string
           description?: string | null
+          fee_amount?: number | null
           id?: string
           moderator_id?: string | null
+          payment_deadline?: string | null
           seller_id?: string | null
+          seller_network?: string | null
+          seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          escrow_id: string
+          from_user: string
+          id: string
+          rating: string
+          to_user: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          escrow_id: string
+          from_user: string
+          id?: string
+          rating: string
+          to_user: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          escrow_id?: string
+          from_user?: string
+          id?: string
+          rating?: string
+          to_user?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_escrow_id_fkey"
+            columns: ["escrow_id"]
+            isOneToOne: false
+            referencedRelation: "escrows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -248,12 +301,43 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string
+          fee_percentage: number
+          id: number
+          safety_message: string | null
+          signup_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fee_percentage?: number
+          id: number
+          safety_message?: string | null
+          signup_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fee_percentage?: number
+          id?: number
+          safety_message?: string | null
+          signup_link?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_verified: boolean | null
+          language: string | null
+          negative_ratings: number | null
+          positive_ratings: number | null
           telegram_chat_id: string | null
           telegram_username: string | null
           updated_at: string
@@ -263,6 +347,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          is_verified?: boolean | null
+          language?: string | null
+          negative_ratings?: number | null
+          positive_ratings?: number | null
           telegram_chat_id?: string | null
           telegram_username?: string | null
           updated_at?: string
@@ -272,6 +360,10 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_verified?: boolean | null
+          language?: string | null
+          negative_ratings?: number | null
+          positive_ratings?: number | null
           telegram_chat_id?: string | null
           telegram_username?: string | null
           updated_at?: string

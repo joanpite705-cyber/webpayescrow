@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight } from "lucide-react";
+import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const userNav = [
@@ -18,6 +18,7 @@ const adminNav = [
   { to: "/admin/disputes", icon: AlertTriangle, label: "Disputes" },
   { to: "/admin/wallets", icon: Wallet, label: "Crypto Wallets" },
   { to: "/admin/bot", icon: Bot, label: "Bot Config" },
+  { to: "/admin/settings", icon: Sliders, label: "Platform Settings" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
