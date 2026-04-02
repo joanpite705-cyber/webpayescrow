@@ -23,6 +23,7 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import AdminDisputes from "./pages/admin/AdminDisputes";
 import AdminWallets from "./pages/admin/AdminWallets";
 import AdminBotConfig from "./pages/admin/AdminBotConfig";
+import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
