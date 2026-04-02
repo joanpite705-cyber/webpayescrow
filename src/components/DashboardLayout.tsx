@@ -18,6 +18,7 @@ const adminNav = [
   { to: "/admin/disputes", icon: AlertTriangle, label: "Disputes" },
   { to: "/admin/wallets", icon: Wallet, label: "Crypto Wallets" },
   { to: "/admin/bot", icon: Bot, label: "Bot Config" },
+  { to: "/admin/settings", icon: Sliders, label: "Platform Settings" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
