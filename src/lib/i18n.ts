@@ -63,7 +63,6 @@ const translations: Record<string, Record<string, string>> = {
     signup_link: "注册链接", fee_percentage: "费率 (%)", safety_message: "安全信息",
     escrow_history: "交易历史", export_csv: "导出CSV", send_reset: "发送重置链接",
     total_trades: "总交易数", member_since: "注册时间",
-    sign_out: "退出", admin_panel: "管理面板", user_dashboard: "用户面板",
   },
   ru: {
     dashboard: "Панель", my_escrows: "Мои сделки", disputes: "Споры", settings: "Настройки",
