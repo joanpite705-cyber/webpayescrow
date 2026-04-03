@@ -35,6 +35,7 @@ const translations: Record<string, Record<string, string>> = {
     admin_confirm_amount: "Confirmed Amount", wallet_address: "Wallet Address",
     network: "Network", crypto: "Crypto", tx_hash: "TX Hash",
     total_trades: "Total Trades", member_since: "Member Since",
+    escrow_history: "Trade History", export_csv: "Export CSV",
   },
   zh: {
     dashboard: "仪表板", my_escrows: "我的托管", disputes: "争议", settings: "设置",
@@ -60,6 +61,8 @@ const translations: Record<string, Record<string, string>> = {
     feedback: "反馈", accept_escrow: "接受托管", decline_escrow: "拒绝托管",
     expired: "已过期", save_settings: "保存设置",
     signup_link: "注册链接", fee_percentage: "费率 (%)", safety_message: "安全信息",
+    escrow_history: "交易历史", export_csv: "导出CSV", send_reset: "发送重置链接",
+    total_trades: "总交易数", member_since: "注册时间",
   },
   ru: {
     dashboard: "Панель", my_escrows: "Мои сделки", disputes: "Споры", settings: "Настройки",
@@ -85,6 +88,8 @@ const translations: Record<string, Record<string, string>> = {
     feedback: "Отзыв", accept_escrow: "Принять сделку", decline_escrow: "Отклонить сделку",
     expired: "Истекла", save_settings: "Сохранить", signup_link: "Ссылка для регистрации",
     fee_percentage: "Комиссия (%)", safety_message: "Сообщение безопасности",
+    escrow_history: "История сделок", export_csv: "Экспорт CSV", send_reset: "Отправить ссылку",
+    total_trades: "Всего сделок", member_since: "С нами с",
   },
   ko: {
     dashboard: "대시보드", my_escrows: "내 에스크로", disputes: "분쟁", settings: "설정",
@@ -105,6 +110,10 @@ const translations: Record<string, Record<string, string>> = {
     language: "언어", save: "저장", actions: "작업",
     feedback: "피드백", accept_escrow: "에스크로 수락", decline_escrow: "에스크로 거절",
     save_settings: "설정 저장", signup_link: "가입 링크", fee_percentage: "수수료 (%)",
+    escrow_history: "거래 내역", export_csv: "CSV 내보내기", send_reset: "재설정 링크 보내기",
+    total_trades: "총 거래", member_since: "가입일",
+    forgot_password: "비밀번호 찾기", reset_password: "비밀번호 재설정",
+    telegram_username: "텔레그램 사용자명", counterpart: "상대방 사용자명",
   },
 };
 
@@ -120,7 +129,13 @@ export function t(key: string, lang: string = "en"): string {
 }
 
 export function getUserLanguage(): string {
-  return localStorage.getItem("app_language") || "en";
+  const saved = localStorage.getItem("app_language");
+  if (saved) return saved;
+  // Auto-detect from browser
+  const browserLang = navigator.language?.split("-")[0] || "en";
+  const supported = LANGUAGES.map((l) => l.code);
+  if (supported.includes(browserLang)) return browserLang;
+  return "en";
 }
 
 export function setUserLanguage(lang: string) {
