@@ -114,7 +114,6 @@ const translations: Record<string, Record<string, string>> = {
     total_trades: "총 거래", member_since: "가입일",
     forgot_password: "비밀번호 찾기", reset_password: "비밀번호 재설정",
     telegram_username: "텔레그램 사용자명", counterpart: "상대방 사용자명",
-    sign_out: "로그아웃", admin_panel: "관리자 패널", user_dashboard: "사용자 패널",
   },
 };
 
