@@ -16,7 +16,7 @@ export default function AdminSettings() {
   useEffect(() => { fetchSettings(); }, []);
 
   const fetchSettings = async () => {
-    const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).single();
+    const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle();
     if (data) {
       setSettings(data);
       setForm({
@@ -29,14 +29,16 @@ export default function AdminSettings() {
 
   const saveSettings = async () => {
     setLoading(true);
-    const { error } = await supabase.from("platform_settings").update({
+    const { error } = await supabase.from("platform_settings").upsert({
+      id: 1,
       fee_percentage: parseFloat(form.fee_percentage),
       signup_link: form.signup_link,
       safety_message: form.safety_message,
-    }).eq("id", 1);
+    });
     if (error) toast.error(error.message);
     else toast.success("Settings saved!");
     setLoading(false);
+    fetchSettings();
   };
 
   return (
