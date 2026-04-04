@@ -18,7 +18,7 @@ export default function AdminBotConfig() {
   useEffect(() => { fetchConfig(); }, []);
 
   const fetchConfig = async () => {
-    const { data } = await supabase.from("bot_config").select("*").limit(1).single();
+    const { data } = await supabase.from("bot_config").select("*").limit(1).maybeSingle();
     if (data) {
       setConfig(data);
       setForm({ bot_username: data.bot_username || "", bot_token: data.bot_token || "", chat_id: data.chat_id || "", is_active: data.is_active });

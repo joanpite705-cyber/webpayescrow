@@ -33,6 +33,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAdminRoute = location.pathname.startsWith("/admin");
   const nav = isAdminRoute ? adminNav : userNav;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileNav = isAdminRoute
+    ? [adminNav[0], adminNav[1], adminNav[3], adminNav[7]]
+    : [userNav[0], userNav[1], userNav[3], userNav[4]];
 
   const sidebar = (
     <>
@@ -134,9 +137,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+      <main className="flex-1 overflow-y-auto pt-14 pb-20 md:pt-0 md:pb-0">
         <div className="p-4 md:p-8">{children}</div>
       </main>
+
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-xl">
+        <div className="grid grid-cols-4 gap-1 px-2 py-2">
+          {mobileNav.map((item) => {
+            const active = location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] transition-colors ${
+                  active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                <span className="truncate max-w-full">{t(item.labelKey, lang)}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

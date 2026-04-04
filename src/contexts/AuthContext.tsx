@@ -28,13 +28,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const clearAuthState = () => {
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setRoles([]);
+    setLoading(false);
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
-      .single();
-    setProfile(data);
+      .maybeSingle();
+    setProfile(data ?? null);
   };
 
   const fetchRoles = async (userId: string) => {
@@ -65,14 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
           }, 0);
         } else {
-          setProfile(null);
-          setRoles([]);
-          setLoading(false);
+          clearAuthState();
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        const invalidRefreshToken = error.message?.includes("Invalid Refresh Token") || error.code === "refresh_token_not_found";
+        if (invalidRefreshToken) {
+          await supabase.auth.signOut({ scope: "local" });
+          clearAuthState();
+          return;
+        }
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

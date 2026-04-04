@@ -23,15 +23,19 @@ export default function Signup() {
   const lang = getUserLanguage();
 
   useEffect(() => {
-    supabase.from("platform_settings").select("signup_link").eq("id", 1).single()
-      .then(({ data }) => { if (data?.signup_link) setBotLink(data.signup_link); });
-    supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).single()
-      .then(({ data }) => {
-        if (data?.bot_username && !botLink) {
-          const u = data.bot_username.replace("@", "");
-          setBotLink(`https://t.me/${u}`);
-        }
-      });
+    Promise.all([
+      supabase.from("platform_settings").select("signup_link").eq("id", 1).maybeSingle(),
+      supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).maybeSingle(),
+    ]).then(([settingsRes, botRes]) => {
+      if (settingsRes.data?.signup_link) {
+        setBotLink(settingsRes.data.signup_link);
+        return;
+      }
+
+      if (botRes.data?.bot_username) {
+        setBotLink(`https://t.me/${botRes.data.bot_username.replace("@", "")}`);
+      }
+    });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

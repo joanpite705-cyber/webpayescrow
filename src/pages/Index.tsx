@@ -10,18 +10,22 @@ import { t, getUserLanguage } from "@/lib/i18n";
 export default function Index() {
   const { user } = useAuth();
   const lang = getUserLanguage();
-  const [botLink, setBotLink] = useState("https://t.me/");
+  const [botLink, setBotLink] = useState("");
 
   useEffect(() => {
-    supabase.from("platform_settings").select("signup_link").eq("id", 1).single()
-      .then(({ data }) => { if (data?.signup_link) setBotLink(data.signup_link); });
-    supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).single()
-      .then(({ data }) => {
-        if (data?.bot_username) {
-          const u = data.bot_username.replace("@", "");
-          setBotLink(`https://t.me/${u}`);
-        }
-      });
+    Promise.all([
+      supabase.from("platform_settings").select("signup_link").eq("id", 1).maybeSingle(),
+      supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).maybeSingle(),
+    ]).then(([settingsRes, botRes]) => {
+      if (settingsRes.data?.signup_link) {
+        setBotLink(settingsRes.data.signup_link);
+        return;
+      }
+
+      if (botRes.data?.bot_username) {
+        setBotLink(`https://t.me/${botRes.data.bot_username.replace("@", "")}`);
+      }
+    });
   }, []);
 
   return (
@@ -65,11 +69,17 @@ export default function Index() {
               Start Trading <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <a href={botLink} target="_blank" rel="noopener noreferrer">
-            <Button size="lg" variant="outline" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
+          {botLink ? (
+            <a href={botLink} target="_blank" rel="noopener noreferrer">
+              <Button size="lg" variant="outline" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
+                <MessageSquare className="h-4 w-4" /> Open Telegram Bot
+              </Button>
+            </a>
+          ) : (
+            <Button size="lg" variant="outline" disabled className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
               <MessageSquare className="h-4 w-4" /> Open Telegram Bot
             </Button>
-          </a>
+          )}
         </div>
       </section>
 

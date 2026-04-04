@@ -430,7 +430,7 @@ export default function EscrowDetail() {
         </div>
 
         {/* Chat */}
-        <div className="lg:col-span-2 glass-card flex flex-col" style={{ height: "calc(100vh - 12rem)" }}>
+        <div className="lg:col-span-2 glass-card flex flex-col min-h-[32rem] h-[65vh] md:h-[calc(100vh-12rem)]">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h3 className="font-semibold">{t("escrow_chat", lang)}</h3>
             {escrow.status === "disputed" && (
