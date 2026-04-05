@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders, Menu, X, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, useLanguage } from "@/lib/i18n";
 
 const userNav = [
   { to: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, profile, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const nav = isAdminRoute ? adminNav : userNav;
   const [mobileOpen, setMobileOpen] = useState(false);

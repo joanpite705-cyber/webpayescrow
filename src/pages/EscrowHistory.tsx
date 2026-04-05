@@ -5,11 +5,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Download, History } from "lucide-react";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, useLanguage } from "@/lib/i18n";
 
 export default function EscrowHistory() {
   const { user } = useAuth();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
   const [escrows, setEscrows] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalTrades: 0, totalVolume: 0, totalFees: 0 });
 

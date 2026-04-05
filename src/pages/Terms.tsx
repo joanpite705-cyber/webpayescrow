@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Shield, ArrowLeft } from "lucide-react";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Terms() {
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
 
   return (
     <div className="min-h-screen bg-background">
