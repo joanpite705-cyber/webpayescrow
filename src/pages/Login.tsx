@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, useLanguage } from "@/lib/i18n";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,7 +16,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

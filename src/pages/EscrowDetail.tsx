@@ -9,12 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Send, AlertTriangle, Wallet, Copy, Clock, Star, ShieldCheck, CheckCircle, ThumbsUp, ThumbsDown, Shield } from "lucide-react";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, useLanguage } from "@/lib/i18n";
 
 export default function EscrowDetail() {
   const { id } = useParams();
   const { user } = useAuth();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
   const [escrow, setEscrow] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -29,6 +29,7 @@ export default function EscrowDetail() {
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ rating: "", comment: "" });
   const [existingFeedback, setExistingFeedback] = useState<any[]>([]);
+  const [releaseDetails, setReleaseDetails] = useState("");
   const messagesEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function EscrowDetail() {
       supabase.from("escrow_messages").select("*").eq("escrow_id", id!).order("created_at"),
       supabase.from("payments").select("*").eq("escrow_id", id!).order("created_at"),
       supabase.from("crypto_wallets").select("*").eq("is_active", true),
-      supabase.from("platform_settings").select("*").eq("id", 1).single(),
+      supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle(),
     ]);
     setEscrow(escrowRes.data);
     setMessages(msgsRes.data || []);
@@ -187,6 +188,20 @@ export default function EscrowDetail() {
     const { error } = await supabase.from("escrows").update({ status: "completed" as const }).eq("id", escrow.id);
     if (error) toast.error(error.message);
     else { toast.success("Funds released! Trade complete."); fetchData(); }
+  };
+
+  const shareReleaseDetails = async () => {
+    if (!releaseDetails.trim() || !user) return;
+    const { error } = await supabase.from("escrow_messages").insert({
+      escrow_id: id!,
+      sender_id: user.id,
+      message: `📦 Seller delivery details\n\n${releaseDetails.trim()}`,
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Release details shared");
+      setReleaseDetails("");
+    }
   };
 
   const raiseDispute = async () => {
@@ -351,6 +366,16 @@ export default function EscrowDetail() {
               <p className="text-sm text-muted-foreground mb-4">
                 Admin has confirmed the buyer's payment. Once you've delivered the goods/service, release the funds to complete the trade.
               </p>
+              <Textarea
+                value={releaseDetails}
+                onChange={(e) => setReleaseDetails(e.target.value)}
+                placeholder="Share delivery info here: links, credentials, files reference, service details, or moderator verification notes"
+                className="mb-3"
+                rows={5}
+              />
+              <Button variant="outline" onClick={shareReleaseDetails} className="w-full mb-3">
+                Share delivery details in chat
+              </Button>
               <Button onClick={releaseFunds} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 {t("release_funds", lang)}
               </Button>

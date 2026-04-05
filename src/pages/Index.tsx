@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, normalizeExternalUrl, useLanguage } from "@/lib/i18n";
 
 export default function Index() {
   const { user } = useAuth();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
   const [botLink, setBotLink] = useState("");
 
   useEffect(() => {
@@ -17,14 +17,12 @@ export default function Index() {
       supabase.from("platform_settings").select("signup_link").eq("id", 1).maybeSingle(),
       supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).maybeSingle(),
     ]).then(([settingsRes, botRes]) => {
-      if (settingsRes.data?.signup_link) {
-        setBotLink(settingsRes.data.signup_link);
+      if (botRes.data?.bot_username) {
+        setBotLink(`https://t.me/${botRes.data.bot_username.replace("@", "")}`);
         return;
       }
 
-      if (botRes.data?.bot_username) {
-        setBotLink(`https://t.me/${botRes.data.bot_username.replace("@", "")}`);
-      }
+      setBotLink(normalizeExternalUrl(settingsRes.data?.signup_link));
     });
   }, []);
 

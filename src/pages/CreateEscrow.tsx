@@ -10,12 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Copy, Wallet, Info } from "lucide-react";
-import { t, getUserLanguage } from "@/lib/i18n";
+import { t, useLanguage } from "@/lib/i18n";
 
 export default function CreateEscrow() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [wallets, setWallets] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function CreateEscrow() {
   useEffect(() => {
     Promise.all([
       supabase.from("crypto_wallets").select("*").eq("is_active", true),
-      supabase.from("platform_settings").select("*").eq("id", 1).single(),
+      supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle(),
     ]).then(([w, s]) => {
       setWallets(w.data || []);
       setSettings(s.data);
@@ -53,9 +53,10 @@ export default function CreateEscrow() {
     if (!user) return;
     setLoading(true);
 
+    const counterpartUsername = form.counterpart.replace("@", "").trim();
     const { data: counterpartProfile } = await supabase
       .from("profiles").select("id")
-      .eq("telegram_username", form.counterpart.replace("@", "")).single();
+      .ilike("telegram_username", counterpartUsername).maybeSingle();
 
     if (!counterpartProfile) {
       toast.error("Counterpart not found. Make sure they have an account.");

@@ -1,4 +1,4 @@
-import { LANGUAGES, getUserLanguage, setUserLanguage } from "@/lib/i18n";
+import { LANGUAGES, setUserLanguage, useLanguage } from "@/lib/i18n";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe } from "lucide-react";
 
@@ -8,12 +8,11 @@ interface Props {
 }
 
 export default function LanguageSwitcher({ onChange, compact }: Props) {
-  const lang = getUserLanguage();
+  const { lang } = useLanguage();
 
   const handleChange = (v: string) => {
     setUserLanguage(v);
     onChange?.();
-    window.location.reload();
   };
 
   return (

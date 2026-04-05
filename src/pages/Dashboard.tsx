@@ -6,9 +6,11 @@ import StatusBadge from "@/components/StatusBadge";
 import { Link } from "react-router-dom";
 import { HandCoins, ArrowUpRight, Plus, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { lang } = useLanguage();
   const [escrows, setEscrows] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, disputed: 0, completed: 0 });
 
@@ -42,7 +44,7 @@ export default function Dashboard() {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">{lang === "zh" ? "仪表板" : lang === "ru" ? "Панель" : lang === "ko" ? "대시보드" : "Dashboard"}</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your escrow overview.</p>
         </div>
         <Link to="/dashboard/escrows/new">
