@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+
+const LANGUAGE_EVENT = "app-language-change";
+
 const translations: Record<string, Record<string, string>> = {
   en: {
     dashboard: "Dashboard", my_escrows: "My Escrows", disputes: "Disputes", settings: "Settings",
@@ -140,4 +144,32 @@ export function getUserLanguage(): string {
 
 export function setUserLanguage(lang: string) {
   localStorage.setItem("app_language", lang);
+  window.dispatchEvent(new CustomEvent(LANGUAGE_EVENT, { detail: lang }));
+}
+
+export function useLanguage() {
+  const [lang, setLang] = useState(() => getUserLanguage());
+
+  useEffect(() => {
+    const syncLanguage = () => setLang(getUserLanguage());
+
+    window.addEventListener(LANGUAGE_EVENT, syncLanguage);
+    window.addEventListener("storage", syncLanguage);
+
+    return () => {
+      window.removeEventListener(LANGUAGE_EVENT, syncLanguage);
+      window.removeEventListener("storage", syncLanguage);
+    };
+  }, []);
+
+  return { lang };
+}
+
+export function normalizeExternalUrl(value?: string | null): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed) || /^tg:\/\//i.test(trimmed)) return trimmed;
+  if (/^www\./i.test(trimmed) || /^[\w-]+(\.[\w-]+)+/.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
 }
