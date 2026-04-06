@@ -127,6 +127,8 @@ export type Database = {
           escrow_id: string
           id: string
           message: string
+          message_label: string | null
+          message_type: string
           sender_id: string
         }
         Insert: {
@@ -134,6 +136,8 @@ export type Database = {
           escrow_id: string
           id?: string
           message: string
+          message_label?: string | null
+          message_type?: string
           sender_id: string
         }
         Update: {
@@ -141,6 +145,8 @@ export type Database = {
           escrow_id?: string
           id?: string
           message?: string
+          message_label?: string | null
+          message_type?: string
           sender_id?: string
         }
         Relationships: [
@@ -153,11 +159,65 @@ export type Database = {
           },
         ]
       }
+      escrow_releases: {
+        Row: {
+          content: string | null
+          created_at: string
+          escrow_id: string
+          file_url: string | null
+          id: string
+          release_type: string
+          requires_moderator_review: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sender_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          escrow_id: string
+          file_url?: string | null
+          id?: string
+          release_type?: string
+          requires_moderator_review?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sender_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          escrow_id?: string
+          file_url?: string | null
+          id?: string
+          release_type?: string
+          requires_moderator_review?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sender_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_releases_escrow_id_fkey"
+            columns: ["escrow_id"]
+            isOneToOne: false
+            referencedRelation: "escrows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escrows: {
         Row: {
           accepted_at: string | null
           amount: number
           buyer_id: string | null
+          buyer_username: string | null
           created_at: string
           created_by: string
           crypto_type: string
@@ -168,6 +228,7 @@ export type Database = {
           payment_deadline: string | null
           seller_id: string | null
           seller_network: string | null
+          seller_username: string | null
           seller_wallet_address: string | null
           status: Database["public"]["Enums"]["escrow_status"]
           title: string
@@ -177,6 +238,7 @@ export type Database = {
           accepted_at?: string | null
           amount?: number
           buyer_id?: string | null
+          buyer_username?: string | null
           created_at?: string
           created_by: string
           crypto_type?: string
@@ -187,6 +249,7 @@ export type Database = {
           payment_deadline?: string | null
           seller_id?: string | null
           seller_network?: string | null
+          seller_username?: string | null
           seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title: string
@@ -196,6 +259,7 @@ export type Database = {
           accepted_at?: string | null
           amount?: number
           buyer_id?: string | null
+          buyer_username?: string | null
           created_at?: string
           created_by?: string
           crypto_type?: string
@@ -206,6 +270,7 @@ export type Database = {
           payment_deadline?: string | null
           seller_id?: string | null
           seller_network?: string | null
+          seller_username?: string | null
           seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title?: string
@@ -365,6 +430,45 @@ export type Database = {
           negative_ratings?: number | null
           positive_ratings?: number | null
           telegram_chat_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      telegram_sessions: {
+        Row: {
+          chat_id: string
+          created_at: string
+          expires_at: string
+          flow: string
+          id: string
+          linked_profile_id: string | null
+          state: Json
+          step: string
+          telegram_username: string | null
+          updated_at: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          expires_at?: string
+          flow: string
+          id?: string
+          linked_profile_id?: string | null
+          state?: Json
+          step: string
+          telegram_username?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          expires_at?: string
+          flow?: string
+          id?: string
+          linked_profile_id?: string | null
+          state?: Json
+          step?: string
           telegram_username?: string | null
           updated_at?: string
         }
