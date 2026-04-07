@@ -465,17 +465,24 @@ export default function EscrowDetail() {
             )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((m, i) => {
+            {messages.map((m) => {
               const isMe = m.sender_id === user?.id;
               const senderProfile = profiles[m.sender_id];
-              // Check if this is a safety/system message (first message)
-              const isSystemMsg = i === 0 && m.message?.includes("⚠️");
+              const isSystemMsg = m.message_type === "system" || m.message_type === "release" || (m.message?.includes("⚠️") && !m.message_type);
+              const label = m.message_label || (isSystemMsg ? "Moderator" : null);
+
               return (
                 <div key={m.id} className={`flex ${isSystemMsg ? "justify-center" : isMe ? "justify-end" : "justify-start"}`}>
                   {isSystemMsg ? (
-                    <div className="max-w-[90%] rounded-xl px-4 py-2.5 text-sm bg-warning/10 text-warning border border-warning/20">
-                      <p className="text-xs font-semibold mb-1">⚠️ {t("safety_warning", lang)}</p>
-                      <p>{m.message}</p>
+                    <div className={`max-w-[90%] rounded-xl px-4 py-2.5 text-sm border ${
+                      m.message_type === "release"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : "bg-warning/10 text-warning border-warning/20"
+                    }`}>
+                      <p className="text-xs font-semibold mb-1 flex items-center gap-1">
+                        <Shield className="h-3 w-3" /> {label}
+                      </p>
+                      <p className="whitespace-pre-wrap">{m.message}</p>
                     </div>
                   ) : (
                     <div className={`max-w-[70%] rounded-xl px-4 py-2.5 text-sm ${
@@ -487,7 +494,7 @@ export default function EscrowDetail() {
                           {senderProfile?.is_verified && <ShieldCheck className="h-3 w-3" />}
                         </p>
                       )}
-                      <p>{m.message}</p>
+                      <p className="whitespace-pre-wrap">{m.message}</p>
                       <p className="text-[10px] opacity-50 mt-1">{new Date(m.created_at).toLocaleTimeString()}</p>
                     </div>
                   )}
