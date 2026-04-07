@@ -1,36 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function ResetPassword() {
-  const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [botLink, setBotLink] = useState("");
 
-  // Check if this is a recovery redirect
   const hash = window.location.hash;
   const isRecovery = hash.includes("type=recovery");
 
-  const handleResetRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setSent(true);
-      toast.success("Check your email for the reset link");
-    }
-  };
+  useEffect(() => {
+    supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).maybeSingle()
+      .then(({ data }) => {
+        if (data?.bot_username) setBotLink(`https://t.me/${data.bot_username.replace("@", "")}`);
+      });
+  }, []);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,9 +31,8 @@ export default function ResetPassword() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) toast.error(error.message);
+    else {
       toast.success("Password updated successfully!");
       window.location.href = "/login";
     }
@@ -59,7 +48,7 @@ export default function ResetPassword() {
           </Link>
           <h1 className="text-2xl font-bold">{isRecovery ? "Set New Password" : "Reset Password"}</h1>
           <p className="text-muted-foreground mt-1">
-            {isRecovery ? "Enter your new password below" : "We'll send you a reset link"}
+            {isRecovery ? "Enter your new password below" : "Use the Telegram bot to reset your password"}
           </p>
         </div>
 
@@ -75,22 +64,25 @@ export default function ResetPassword() {
                 {loading ? "Updating..." : "Update Password"}
               </Button>
             </form>
-          ) : sent ? (
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">Reset link sent to <strong className="text-foreground">{email}</strong></p>
-              <p className="text-sm text-muted-foreground mt-2">Check your email and click the link to reset your password.</p>
-            </div>
           ) : (
-            <form onSubmit={handleResetRequest} className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com" required className="mt-1.5" />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending..." : "Send Reset Link"}
-              </Button>
-            </form>
+            <div className="text-center py-4 space-y-4">
+              <MessageSquare className="h-12 w-12 text-primary mx-auto" />
+              <p className="text-muted-foreground">
+                Password resets are handled through the Telegram bot for security.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Open the bot and use the <strong>/resetpassword</strong> command to get a temporary password.
+              </p>
+              {botLink ? (
+                <a href={botLink} target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full gap-2">
+                    <MessageSquare className="h-4 w-4" /> Open Telegram Bot
+                  </Button>
+                </a>
+              ) : (
+                <Button className="w-full" disabled>Bot not configured</Button>
+              )}
+            </div>
           )}
 
           <div className="mt-6 text-center">

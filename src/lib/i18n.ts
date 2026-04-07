@@ -40,6 +40,11 @@ const translations: Record<string, Record<string, string>> = {
     network: "Network", crypto: "Crypto", tx_hash: "TX Hash",
     total_trades: "Total Trades", member_since: "Member Since",
     escrow_history: "Trade History", export_csv: "Export CSV",
+    change_password: "Change Password", new_password: "New Password",
+    current_password: "Current Password", display_name: "Display Name",
+    profile_settings: "Profile Settings", reset_via_bot: "Reset via Telegram Bot",
+    delivery_details: "Delivery Details", release_section: "Release & Delivery",
+    funds_available: "Funds Available",
   },
   zh: {
     dashboard: "仪表板", my_escrows: "我的托管", disputes: "争议", settings: "设置",
@@ -67,6 +72,10 @@ const translations: Record<string, Record<string, string>> = {
     signup_link: "注册链接", fee_percentage: "费率 (%)", safety_message: "安全信息",
     escrow_history: "交易历史", export_csv: "导出CSV", send_reset: "发送重置链接",
     total_trades: "总交易数", member_since: "注册时间",
+    change_password: "修改密码", new_password: "新密码", current_password: "当前密码",
+    display_name: "显示名称", profile_settings: "个人设置",
+    reset_via_bot: "通过Telegram机器人重置", delivery_details: "交付详情",
+    release_section: "交付与发布", funds_available: "资金可用",
   },
   ru: {
     dashboard: "Панель", my_escrows: "Мои сделки", disputes: "Споры", settings: "Настройки",
@@ -94,6 +103,10 @@ const translations: Record<string, Record<string, string>> = {
     fee_percentage: "Комиссия (%)", safety_message: "Сообщение безопасности",
     escrow_history: "История сделок", export_csv: "Экспорт CSV", send_reset: "Отправить ссылку",
     total_trades: "Всего сделок", member_since: "С нами с",
+    change_password: "Изменить пароль", new_password: "Новый пароль", current_password: "Текущий пароль",
+    display_name: "Имя", profile_settings: "Настройки профиля",
+    reset_via_bot: "Сброс через Telegram бота", delivery_details: "Детали доставки",
+    release_section: "Доставка и передача", funds_available: "Средства доступны",
   },
   ko: {
     dashboard: "대시보드", my_escrows: "내 에스크로", disputes: "분쟁", settings: "설정",
@@ -108,7 +121,7 @@ const translations: Record<string, Record<string, string>> = {
     mark_paid: "결제 완료 표시", release_funds: "자금 릴리스",
     rate_trade: "거래 평가", positive: "긍정적", negative: "부정적",
     verified: "인증됨", fee: "수수료", safety_warning: "안전 경고",
-    no_offline: "⚠️ 플랫폼 외부에서 거래하지 마세요. 모든 거래는 에스크로를 통해야 합니다.",
+    no_offline: "⚠️ 플랫폼 외부에서 거래하지 마세요.",
     login: "로그인", signup: "회원가입", email: "이메일", password: "비밀번호",
     escrow_chat: "에스크로 채팅", send: "보내기", type_message: "메시지 입력...",
     language: "언어", save: "저장", actions: "작업",
@@ -118,14 +131,58 @@ const translations: Record<string, Record<string, string>> = {
     total_trades: "총 거래", member_since: "가입일",
     forgot_password: "비밀번호 찾기", reset_password: "비밀번호 재설정",
     telegram_username: "텔레그램 사용자명", counterpart: "상대방 사용자명",
+    change_password: "비밀번호 변경", new_password: "새 비밀번호", current_password: "현재 비밀번호",
+    display_name: "표시 이름", profile_settings: "프로필 설정",
+    reset_via_bot: "텔레그램 봇으로 재설정", delivery_details: "배달 세부정보",
+    release_section: "배달 및 릴리스", funds_available: "자금 사용 가능",
+  },
+  fr: {
+    dashboard: "Tableau de bord", my_escrows: "Mes séquestres", disputes: "Litiges", settings: "Paramètres",
+    login: "Connexion", signup: "Inscription", email: "Email", password: "Mot de passe",
+    create_escrow: "Créer un séquestre", buyer: "Acheteur", seller: "Vendeur",
+    amount: "Montant", title: "Titre", status: "Statut", accept: "Accepter",
+    confirm: "Confirmer", cancel: "Annuler", sign_out: "Déconnexion",
+    language: "Langue", save: "Enregistrer", actions: "Actions",
+    change_password: "Changer le mot de passe", display_name: "Nom d'affichage",
+    profile_settings: "Paramètres du profil", reset_via_bot: "Réinitialiser via Telegram Bot",
+  },
+  es: {
+    dashboard: "Panel", my_escrows: "Mis depósitos", disputes: "Disputas", settings: "Ajustes",
+    login: "Iniciar sesión", signup: "Registrarse", email: "Correo", password: "Contraseña",
+    create_escrow: "Crear depósito", buyer: "Comprador", seller: "Vendedor",
+    amount: "Cantidad", title: "Título", status: "Estado", accept: "Aceptar",
+    confirm: "Confirmar", cancel: "Cancelar", sign_out: "Cerrar sesión",
+    language: "Idioma", save: "Guardar", actions: "Acciones",
+    change_password: "Cambiar contraseña", display_name: "Nombre para mostrar",
+    profile_settings: "Configuración del perfil", reset_via_bot: "Restablecer via Telegram Bot",
+  },
+  ar: {
+    dashboard: "لوحة القيادة", my_escrows: "ضماناتي", disputes: "النزاعات", settings: "الإعدادات",
+    login: "تسجيل الدخول", signup: "إنشاء حساب", email: "البريد الإلكتروني", password: "كلمة المرور",
+    create_escrow: "إنشاء ضمان", buyer: "المشتري", seller: "البائع",
+    amount: "المبلغ", title: "العنوان", status: "الحالة", accept: "قبول",
+    confirm: "تأكيد", cancel: "إلغاء", sign_out: "تسجيل الخروج",
+    language: "اللغة", save: "حفظ", change_password: "تغيير كلمة المرور",
+    display_name: "الاسم المعروض", profile_settings: "إعدادات الملف الشخصي",
+  },
+  pt: {
+    dashboard: "Painel", my_escrows: "Meus depósitos", login: "Entrar", signup: "Cadastrar",
+    email: "Email", password: "Senha", buyer: "Comprador", seller: "Vendedor",
+    amount: "Valor", title: "Título", status: "Status", sign_out: "Sair",
+    language: "Idioma", save: "Salvar", change_password: "Alterar senha",
+    display_name: "Nome de exibição", profile_settings: "Configurações do perfil",
   },
 };
 
 export const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "zh", label: "中文" },
-  { code: "ru", label: "Русский" },
-  { code: "ko", label: "한국어" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "zh", label: "中文", flag: "🇨🇳" },
+  { code: "ru", label: "Русский", flag: "🇷🇺" },
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "ar", label: "العربية", flag: "🇸🇦" },
+  { code: "pt", label: "Português", flag: "🇧🇷" },
 ];
 
 export function t(key: string, lang: string = "en"): string {
@@ -135,7 +192,6 @@ export function t(key: string, lang: string = "en"): string {
 export function getUserLanguage(): string {
   const saved = localStorage.getItem("app_language");
   if (saved) return saved;
-  // Auto-detect from browser
   const browserLang = navigator.language?.split("-")[0] || "en";
   const supported = LANGUAGES.map((l) => l.code);
   if (supported.includes(browserLang)) return browserLang;
@@ -152,10 +208,8 @@ export function useLanguage() {
 
   useEffect(() => {
     const syncLanguage = () => setLang(getUserLanguage());
-
     window.addEventListener(LANGUAGE_EVENT, syncLanguage);
     window.addEventListener("storage", syncLanguage);
-
     return () => {
       window.removeEventListener(LANGUAGE_EVENT, syncLanguage);
       window.removeEventListener("storage", syncLanguage);
