@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { WagmiProvider } from "wagmi";
+import { wagmiConfig, initWeb3Modal } from "@/lib/web3";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,13 +28,18 @@ import AdminDisputes from "./pages/admin/AdminDisputes";
 import AdminWallets from "./pages/admin/AdminWallets";
 import AdminBotConfig from "./pages/admin/AdminBotConfig";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminBalances from "./pages/admin/AdminBalances";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 
 const queryClient = new QueryClient();
 
+// Initialize Web3Modal once
+if (typeof window !== "undefined") initWeb3Modal();
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <WagmiProvider config={wagmiConfig}>
+   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -62,6 +69,7 @@ const App = () => (
             <Route path="/admin/payments" element={<ProtectedRoute requireAdmin><AdminPayments /></ProtectedRoute>} />
             <Route path="/admin/disputes" element={<ProtectedRoute requireAdmin><AdminDisputes /></ProtectedRoute>} />
             <Route path="/admin/wallets" element={<ProtectedRoute requireAdmin><AdminWallets /></ProtectedRoute>} />
+            <Route path="/admin/balances" element={<ProtectedRoute requireAdmin><AdminBalances /></ProtectedRoute>} />
             <Route path="/admin/bot" element={<ProtectedRoute requireAdmin><AdminBotConfig /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
 
@@ -70,7 +78,8 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+   </QueryClientProvider>
+  </WagmiProvider>
 );
 
 export default App;
