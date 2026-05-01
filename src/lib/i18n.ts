@@ -44,7 +44,7 @@ const translations: Record<string, Record<string, string>> = {
     current_password: "Current Password", display_name: "Display Name",
     profile_settings: "Profile Settings", reset_via_bot: "Reset via Telegram Bot",
     delivery_details: "Delivery Details", release_section: "Release & Delivery",
-    funds_available: "Funds Available",
+    funds_available: "Funds Available", balances: "Balances",
   },
   zh: {
     dashboard: "仪表板", my_escrows: "我的托管", disputes: "争议", settings: "设置",
