@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      balance_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          crypto_type: string
+          id: string
+          note: string | null
+          reference_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          crypto_type: string
+          id?: string
+          note?: string | null
+          reference_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          crypto_type?: string
+          id?: string
+          note?: string | null
+          reference_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bot_config: {
         Row: {
           bot_token: string | null
@@ -41,6 +77,39 @@ export type Database = {
           id?: string
           is_active?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      connected_wallets: {
+        Row: {
+          address: string
+          chain_id: number | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          label: string | null
+          network: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          chain_id?: number | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          network?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          chain_id?: number | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          network?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -471,6 +540,36 @@ export type Database = {
           step?: string
           telegram_username?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          crypto_type: string
+          id: string
+          locked_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          crypto_type: string
+          id?: string
+          locked_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          crypto_type?: string
+          id?: string
+          locked_balance?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
