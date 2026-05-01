@@ -574,6 +574,14 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
   const buttons: any[] = [];
   const webUrl = await getWebAppUrl();
 
+  // Counterpart can accept/decline pending escrows
+  if (escrow.status === 'pending' && escrow.created_by !== profile.id && (isBuyer || isSeller)) {
+    buttons.push([
+      { text: '✅ Accept', callback_data: `accept_${escrowId}` },
+      { text: '❌ Decline', callback_data: `decline_${escrowId}` },
+    ]);
+  }
+
   if (escrow.status === 'active' && isBuyer) {
     const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
     const matching = wallets?.filter((w: any) => {
