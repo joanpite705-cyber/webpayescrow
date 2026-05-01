@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Send, AlertTriangle, Wallet, Copy, Clock, Star, ShieldCheck, CheckCircle, ThumbsUp, ThumbsDown, Shield } from "lucide-react";
 import { t, useLanguage } from "@/lib/i18n";
+import StructuredReleaseForm from "@/components/StructuredReleaseForm";
 
 export default function EscrowDetail() {
   const { id } = useParams();
@@ -359,27 +360,20 @@ export default function EscrowDetail() {
 
           {/* Seller: Release funds after admin confirms */}
           {isSeller && escrow.status === "confirmed" && (
+            <>
+            <StructuredReleaseForm escrowId={escrow.id} senderId={user!.id} onSubmitted={fetchData} />
             <div className="glass-card p-6 border border-emerald-500/30">
               <h3 className="font-semibold mb-3 text-emerald-400 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" /> Payment Confirmed by Admin
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Admin has confirmed the buyer's payment. Once you've delivered the goods/service, release the funds to complete the trade.
+                Funds are secured. Submit a structured delivery above, then release the funds to complete the trade.
               </p>
-              <Textarea
-                value={releaseDetails}
-                onChange={(e) => setReleaseDetails(e.target.value)}
-                placeholder="Share delivery info here: links, credentials, files reference, service details, or moderator verification notes"
-                className="mb-3"
-                rows={5}
-              />
-              <Button variant="outline" onClick={shareReleaseDetails} className="w-full mb-3">
-                Share delivery details in chat
-              </Button>
               <Button onClick={releaseFunds} className="w-full bg-emerald-600 hover:bg-emerald-700">
                 {t("release_funds", lang)}
               </Button>
             </div>
+            </>
           )}
 
           {/* Payments list */}
