@@ -510,10 +510,12 @@ async function createEscrowFromBot(chatId: number, username: string, token: stri
     if (counterpartProfile?.telegram_chat_id) {
       await sendTelegram(token, 'sendMessage', {
         chat_id: parseInt(counterpartProfile.telegram_chat_id),
-        text: `🔔 *New Escrow Invite!*\n\n📌 *${title}*\n💰 ${amount} ${crypto}\nFrom: @${profile.telegram_username || username}\nYou are: ${role === 'buyer' ? 'SELLER' : 'BUYER'}\n\nAccept or decline on the web:`,
+        text: `🔔 *New Escrow Invite!*\n\n📌 *${title}*\n💰 ${amount} ${crypto}\nFrom: @${profile.telegram_username || username}\nYou are: ${role === 'buyer' ? 'SELLER' : 'BUYER'}\n\nAccept or decline below:`,
         parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: [
-          [{ text: '🌐 View Escrow', url: `${webUrl}/dashboard/escrows/${escrow.id}` }],
+          [{ text: '✅ Accept', callback_data: `accept_${escrow.id}` }, { text: '❌ Decline', callback_data: `decline_${escrow.id}` }],
+          [{ text: '👁 View Details', callback_data: `escrow_${escrow.id}` }],
+          [{ text: '🌐 Open Web', url: `${webUrl}/dashboard/escrows/${escrow.id}` }],
         ] },
       });
     }
@@ -572,6 +574,14 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
   const buttons: any[] = [];
   const webUrl = await getWebAppUrl();
 
+  // Counterpart can accept/decline pending escrows
+  if (escrow.status === 'pending' && escrow.created_by !== profile.id && (isBuyer || isSeller)) {
+    buttons.push([
+      { text: '✅ Accept', callback_data: `accept_${escrowId}` },
+      { text: '❌ Decline', callback_data: `decline_${escrowId}` },
+    ]);
+  }
+
   if (escrow.status === 'active' && isBuyer) {
     const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
     const matching = wallets?.filter((w: any) => {
@@ -612,6 +622,46 @@ async function handleCallback(query: any, token: string) {
 
   if (data.startsWith('escrow_')) {
     return handleEscrowDetail(chatId, data.replace('escrow_', ''), username, token);
+  }
+
+  if (data.startsWith('accept_')) {
+    const escrowId = data.replace('accept_', '');
+    const profile = await ensureProfile(chatId, username, token);
+    if (!profile) return;
+    const { data: escrow } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+    if (!escrow) return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Escrow not found.' });
+    if (escrow.status !== 'pending') {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: `ℹ️ Already ${escrow.status}.` });
+    }
+    const settings = await getSettings();
+    const feeAmount = (escrow.amount || 0) * (settings.fee_percentage || 2) / 100;
+    const deadline = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    await supabase.from('escrows').update({
+      status: 'active', accepted_at: new Date().toISOString(),
+      payment_deadline: deadline, fee_amount: feeAmount,
+    }).eq('id', escrowId);
+    await supabase.from('escrow_messages').insert({
+      escrow_id: escrowId, sender_id: profile.id,
+      message: settings.safety_message || '⚠️ Escrow accepted. 30 min payment window started.',
+      message_type: 'system', message_label: 'Moderator',
+    });
+    return handleEscrowDetail(chatId, escrowId, username, token);
+  }
+
+  if (data.startsWith('decline_')) {
+    const escrowId = data.replace('decline_', '');
+    const profile = await ensureProfile(chatId, username, token);
+    if (!profile) return;
+    await supabase.from('escrows').update({ status: 'cancelled' }).eq('id', escrowId);
+    await supabase.from('escrow_messages').insert({
+      escrow_id: escrowId, sender_id: profile.id,
+      message: '❌ Counterpart declined the escrow.',
+      message_type: 'system', message_label: 'Moderator',
+    });
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: '❌ Escrow declined.',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    });
   }
 
   if (data.startsWith('mark_paid_')) {
