@@ -1,6 +1,6 @@
 import { defaultWagmiConfig } from "@web3modal/wagmi/react/config";
 import { createWeb3Modal } from "@web3modal/wagmi/react";
-import { mainnet, bsc, polygon, arbitrum, optimism } from "wagmi/chains";
+import { mainnet, bsc, polygon, arbitrum, optimism, base } from "wagmi/chains";
 
 // WalletConnect Cloud project ID. Replace via admin panel/env if you have one.
 // Until set, WalletConnect will still load but won't allow remote pairing.
@@ -13,7 +13,7 @@ const metadata = {
   icons: ["/icons/icon-192.png"],
 };
 
-const chains = [mainnet, bsc, polygon, arbitrum, optimism] as const;
+const chains = [mainnet, bsc, polygon, arbitrum, optimism, base] as const;
 
 export const wagmiConfig = defaultWagmiConfig({
   chains,

@@ -80,6 +80,113 @@ export type Database = {
         }
         Relationships: []
       }
+      chain_configs: {
+        Row: {
+          chain_id: number | null
+          chain_key: string
+          cold_wallet_address: string | null
+          created_at: string
+          display_name: string
+          explorer_url: string | null
+          family: string
+          gas_wallet_address: string | null
+          gas_wallet_private_key: string | null
+          id: string
+          is_active: boolean
+          min_confirmations: number
+          min_gas_reserve: number
+          native_decimals: number
+          native_symbol: string
+          rpc_url: string | null
+          sort_order: number
+          treasury_address: string | null
+          treasury_private_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          chain_id?: number | null
+          chain_key: string
+          cold_wallet_address?: string | null
+          created_at?: string
+          display_name: string
+          explorer_url?: string | null
+          family: string
+          gas_wallet_address?: string | null
+          gas_wallet_private_key?: string | null
+          id?: string
+          is_active?: boolean
+          min_confirmations?: number
+          min_gas_reserve?: number
+          native_decimals?: number
+          native_symbol: string
+          rpc_url?: string | null
+          sort_order?: number
+          treasury_address?: string | null
+          treasury_private_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chain_id?: number | null
+          chain_key?: string
+          cold_wallet_address?: string | null
+          created_at?: string
+          display_name?: string
+          explorer_url?: string | null
+          family?: string
+          gas_wallet_address?: string | null
+          gas_wallet_private_key?: string | null
+          id?: string
+          is_active?: boolean
+          min_confirmations?: number
+          min_gas_reserve?: number
+          native_decimals?: number
+          native_symbol?: string
+          rpc_url?: string | null
+          sort_order?: number
+          treasury_address?: string | null
+          treasury_private_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chain_tokens: {
+        Row: {
+          chain_key: string
+          contract_address: string
+          created_at: string
+          decimals: number
+          id: string
+          is_active: boolean
+          symbol: string
+        }
+        Insert: {
+          chain_key: string
+          contract_address: string
+          created_at?: string
+          decimals?: number
+          id?: string
+          is_active?: boolean
+          symbol: string
+        }
+        Update: {
+          chain_key?: string
+          contract_address?: string
+          created_at?: string
+          decimals?: number
+          id?: string
+          is_active?: boolean
+          symbol?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chain_tokens_chain_key_fkey"
+            columns: ["chain_key"]
+            isOneToOne: false
+            referencedRelation: "chain_configs"
+            referencedColumns: ["chain_key"]
+          },
+        ]
+      }
       connected_wallets: {
         Row: {
           address: string
@@ -287,6 +394,7 @@ export type Database = {
           amount: number
           buyer_id: string | null
           buyer_username: string | null
+          chain_key: string | null
           created_at: string
           created_by: string
           crypto_type: string
@@ -301,6 +409,8 @@ export type Database = {
           seller_wallet_address: string | null
           status: Database["public"]["Enums"]["escrow_status"]
           title: string
+          token_contract: string | null
+          token_symbol: string | null
           updated_at: string
         }
         Insert: {
@@ -308,6 +418,7 @@ export type Database = {
           amount?: number
           buyer_id?: string | null
           buyer_username?: string | null
+          chain_key?: string | null
           created_at?: string
           created_by: string
           crypto_type?: string
@@ -322,6 +433,8 @@ export type Database = {
           seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title: string
+          token_contract?: string | null
+          token_symbol?: string | null
           updated_at?: string
         }
         Update: {
@@ -329,6 +442,7 @@ export type Database = {
           amount?: number
           buyer_id?: string | null
           buyer_username?: string | null
+          chain_key?: string | null
           created_at?: string
           created_by?: string
           crypto_type?: string
@@ -343,6 +457,8 @@ export type Database = {
           seller_wallet_address?: string | null
           status?: Database["public"]["Enums"]["escrow_status"]
           title?: string
+          token_contract?: string | null
+          token_symbol?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -504,6 +620,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sweep_jobs: {
+        Row: {
+          amount: number | null
+          chain_key: string
+          created_at: string
+          error_message: string | null
+          from_address: string
+          gas_funding_tx: string | null
+          id: string
+          initiated_by: string | null
+          status: string
+          sweep_tx: string | null
+          to_address: string
+          token_contract: string | null
+          token_symbol: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          chain_key: string
+          created_at?: string
+          error_message?: string | null
+          from_address: string
+          gas_funding_tx?: string | null
+          id?: string
+          initiated_by?: string | null
+          status?: string
+          sweep_tx?: string | null
+          to_address: string
+          token_contract?: string | null
+          token_symbol: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          chain_key?: string
+          created_at?: string
+          error_message?: string | null
+          from_address?: string
+          gas_funding_tx?: string | null
+          id?: string
+          initiated_by?: string | null
+          status?: string
+          sweep_tx?: string | null
+          to_address?: string
+          token_contract?: string | null
+          token_symbol?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       telegram_sessions: {
         Row: {
           chat_id: string
@@ -599,6 +769,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_chains: {
+        Args: never
+        Returns: {
+          chain_id: number
+          chain_key: string
+          display_name: string
+          explorer_url: string
+          family: string
+          min_confirmations: number
+          native_symbol: string
+          sort_order: number
+          treasury_address: string
+        }[]
+      }
+      get_public_tokens: {
+        Args: never
+        Returns: {
+          chain_key: string
+          contract_address: string
+          decimals: number
+          symbol: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

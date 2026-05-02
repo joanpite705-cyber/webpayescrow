@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { HandCoins, ArrowUpRight, Plus, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
+import BalanceCard from "@/components/BalanceCard";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -63,6 +64,8 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      <BalanceCard />
 
       <div className="glass-card">
         <div className="flex items-center justify-between p-5 border-b border-border">
