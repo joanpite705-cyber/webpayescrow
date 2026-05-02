@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders, Menu, X, History, Coins } from "lucide-react";
+import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders, Menu, X, History, Coins, Network, ArrowDownToLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import WalletConnectButton from "@/components/WalletConnectButton";
@@ -23,6 +23,8 @@ const adminNav = [
   { to: "/admin/disputes", icon: AlertTriangle, labelKey: "disputes" },
   { to: "/admin/wallets", icon: Wallet, labelKey: "crypto_wallets" },
   { to: "/admin/balances", icon: Coins, labelKey: "balances" },
+  { to: "/admin/chains", icon: Network, labelKey: "chains" },
+  { to: "/admin/sweeps", icon: ArrowDownToLine, labelKey: "sweeps" },
   { to: "/admin/bot", icon: Bot, labelKey: "bot_config" },
   { to: "/admin/settings", icon: Sliders, labelKey: "platform" },
 ];
