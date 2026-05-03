@@ -31,6 +31,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminBalances from "./pages/admin/AdminBalances";
 import AdminChains from "./pages/admin/AdminChains";
 import AdminSweeps from "./pages/admin/AdminSweeps";
+import AdminUserWallets from "./pages/admin/AdminUserWallets";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/admin/balances" element={<ProtectedRoute requireAdmin><AdminBalances /></ProtectedRoute>} />
             <Route path="/admin/chains" element={<ProtectedRoute requireAdmin><AdminChains /></ProtectedRoute>} />
             <Route path="/admin/sweeps" element={<ProtectedRoute requireAdmin><AdminSweeps /></ProtectedRoute>} />
+            <Route path="/admin/user-wallets" element={<ProtectedRoute requireAdmin><AdminUserWallets /></ProtectedRoute>} />
             <Route path="/admin/bot" element={<ProtectedRoute requireAdmin><AdminBotConfig /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
 
