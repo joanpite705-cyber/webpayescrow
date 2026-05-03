@@ -70,14 +70,6 @@ async function getSession(chatId: number): Promise<SessionState | null> {
 }
 
 async function setSession(chatId: number, state: SessionState, username?: string) {
-  // Upsert by chat_id
-  const { data: existing } = await supabase
-    .from('telegram_sessions')
-    .select('id')
-    .eq('chat_id', String(chatId))
-    .limit(1)
-    .single();
-
   const row = {
     chat_id: String(chatId),
     step: state.step,
@@ -87,12 +79,7 @@ async function setSession(chatId: number, state: SessionState, username?: string
     expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date().toISOString(),
   };
-
-  if (existing) {
-    await supabase.from('telegram_sessions').update(row).eq('id', existing.id);
-  } else {
-    await supabase.from('telegram_sessions').insert(row);
-  }
+  await supabase.from('telegram_sessions').upsert(row, { onConflict: 'chat_id' });
 }
 
 async function clearSession(chatId: number) {
