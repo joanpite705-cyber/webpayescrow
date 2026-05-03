@@ -16,10 +16,9 @@ export default function ResetPassword() {
   const isRecovery = hash.includes("type=recovery");
 
   useEffect(() => {
-    supabase.from("bot_config").select("bot_username").eq("is_active", true).limit(1).maybeSingle()
-      .then(({ data }) => {
-        if (data?.bot_username) setBotLink(`https://t.me/${data.bot_username.replace("@", "")}`);
-      });
+    (supabase as any).rpc("get_bot_username").then(({ data }: { data: string | null }) => {
+      if (data) setBotLink(`https://t.me/${String(data).replace("@", "")}`);
+    });
   }, []);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {

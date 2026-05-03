@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Network, Save, Plus, Trash2, ChevronDown, ChevronUp, Coins } from "lucide-react";
+import { Network, Save, Plus, Trash2, ChevronDown, ChevronUp, Coins, Wand2 } from "lucide-react";
 
 type Chain = any;
 type Token = { id?: string; chain_key: string; symbol: string; contract_address: string; decimals: number; is_active: boolean };
@@ -31,6 +31,22 @@ export default function AdminChains() {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+
+  // Apply shared EVM treasury/gas keys to all EVM chains in one click
+  const applyEvmShared = async () => {
+    const eth = chains.find((c) => c.chain_key === "ethereum");
+    if (!eth) return toast.error("Configure Ethereum first");
+    const patch = {
+      treasury_address: eth.treasury_address,
+      treasury_private_key: eth.treasury_private_key,
+      gas_wallet_address: eth.gas_wallet_address,
+      gas_wallet_private_key: eth.gas_wallet_private_key,
+    };
+    const evmKeys = chains.filter((c) => c.family === "evm" && c.chain_key !== "ethereum").map((c) => c.id);
+    if (!evmKeys.length) return;
+    const { error } = await (supabase as any).from("chain_configs").update(patch).in("id", evmKeys);
+    if (error) toast.error(error.message); else { toast.success("Shared EVM keys applied"); load(); }
+  };
 
   const save = async (c: Chain) => {
     const { id, ...patch } = c;
@@ -60,8 +76,15 @@ export default function AdminChains() {
   return (
     <DashboardLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Network className="h-6 w-6 text-primary" /> Chains & Treasury</h1>
-        <p className="text-muted-foreground mt-1">Configure RPC, treasury, gas wallet and sweep destination per chain. All keys are admin-only.</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2"><Network className="h-6 w-6 text-primary" /> Chains & Treasury</h1>
+            <p className="text-muted-foreground mt-1">RPC and explorer endpoints are auto-configured. You only need to set the treasury, gas wallet and cold (sweep) wallet.</p>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2" onClick={applyEvmShared}>
+            <Wand2 className="h-4 w-4" /> Copy Ethereum keys to all EVM
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -84,13 +107,8 @@ export default function AdminChains() {
               </button>
               {isOpen && (
                 <div className="p-4 border-t border-border space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Field label="RPC URL" v={c.rpc_url} onChange={(v) => update(i, "rpc_url", v)} placeholder="https://..." />
-                    <Field label="Explorer URL" v={c.explorer_url} onChange={(v) => update(i, "explorer_url", v)} placeholder="https://etherscan.io" />
-                    <Field label="Native Symbol" v={c.native_symbol} onChange={(v) => update(i, "native_symbol", v)} />
-                    <Field label="Native Decimals" type="number" v={c.native_decimals} onChange={(v) => update(i, "native_decimals", parseInt(v) || 0)} />
-                    <Field label="Min Confirmations" type="number" v={c.min_confirmations} onChange={(v) => update(i, "min_confirmations", parseInt(v) || 0)} />
-                    <Field label="Min Gas Reserve" v={c.min_gas_reserve} onChange={(v) => update(i, "min_gas_reserve", v)} placeholder="0" />
+                  <div className="text-xs text-muted-foreground bg-secondary/30 rounded p-2 font-mono break-all">
+                    RPC: {c.rpc_url || "—"}<br/>Explorer: {c.explorer_url || "—"}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Field label="Treasury Address (deposits)" v={c.treasury_address} onChange={(v) => update(i, "treasury_address", v)} placeholder="0x..." />
@@ -98,6 +116,7 @@ export default function AdminChains() {
                     <Field label="Gas Wallet Address" v={c.gas_wallet_address} onChange={(v) => update(i, "gas_wallet_address", v)} placeholder="0x..." />
                     <Field label="Gas Wallet Private Key" type="password" v={c.gas_wallet_private_key} onChange={(v) => update(i, "gas_wallet_private_key", v)} placeholder="•••• funds gas for token sweeps" />
                     <Field label="Cold Wallet (sweep destination)" v={c.cold_wallet_address} onChange={(v) => update(i, "cold_wallet_address", v)} placeholder="0x..." />
+                    <Field label="Min Gas Reserve" v={c.min_gas_reserve} onChange={(v) => update(i, "min_gas_reserve", v)} placeholder="0" />
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={() => save(c)} className="gap-2"><Save className="h-4 w-4" /> Save chain</Button>

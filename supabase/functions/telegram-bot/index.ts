@@ -70,14 +70,6 @@ async function getSession(chatId: number): Promise<SessionState | null> {
 }
 
 async function setSession(chatId: number, state: SessionState, username?: string) {
-  // Upsert by chat_id
-  const { data: existing } = await supabase
-    .from('telegram_sessions')
-    .select('id')
-    .eq('chat_id', String(chatId))
-    .limit(1)
-    .single();
-
   const row = {
     chat_id: String(chatId),
     step: state.step,
@@ -87,12 +79,7 @@ async function setSession(chatId: number, state: SessionState, username?: string
     expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     updated_at: new Date().toISOString(),
   };
-
-  if (existing) {
-    await supabase.from('telegram_sessions').update(row).eq('id', existing.id);
-  } else {
-    await supabase.from('telegram_sessions').insert(row);
-  }
+  await supabase.from('telegram_sessions').upsert(row, { onConflict: 'chat_id' });
 }
 
 async function clearSession(chatId: number) {
@@ -206,15 +193,7 @@ async function handleStart(chatId: number, username: string, token: string) {
       chat_id: chatId,
       text: `🛡️ *Welcome back, @${profile.telegram_username || username}!*\n\nSecure crypto escrow for P2P trades.\n\n⚠️ _${settings.safety_message || 'Never trade outside the platform.'}_\n\nChoose an action:`,
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🤝 New Escrow', callback_data: 'start_escrow' }, { text: '📋 My Escrows', callback_data: 'my_escrows' }],
-          [{ text: '💰 Wallets', callback_data: 'wallets' }, { text: '👤 Status', callback_data: 'status' }],
-          [{ text: '🔑 Reset Password', callback_data: 'reset_password' }],
-          [{ text: '🌐 Open Web App', url: `${webUrl}/dashboard` }],
-          [{ text: '❓ Help', callback_data: 'help' }],
-        ],
-      },
+      reply_markup: mainMenuKeyboard(),
     });
   } else {
     await sendTelegram(token, 'sendMessage', {
@@ -279,7 +258,6 @@ async function handleMyEscrows(chatId: number, username: string, token: string) 
       buttons.push([{ text: `📌 ${e.title} (${e.status})`, callback_data: `escrow_${e.id}` }]);
     }
   }
-  buttons.push([{ text: '🌐 View on Web', url: `${webUrl}/dashboard/escrows` }]);
   buttons.push([{ text: '◀️ Main Menu', callback_data: 'back_main' }]);
 
   await sendTelegram(token, 'sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown', reply_markup: { inline_keyboard: buttons } });
@@ -390,7 +368,6 @@ async function handleConversation(chatId: number, text: string, username: string
       reply_markup: {
         inline_keyboard: [
           [{ text: '🤝 Start Escrow', callback_data: 'start_escrow' }, { text: '📋 My Escrows', callback_data: 'my_escrows' }],
-          [{ text: '🌐 Open Web', url: `${webUrl}/dashboard` }],
         ],
       },
     });
@@ -515,7 +492,6 @@ async function createEscrowFromBot(chatId: number, username: string, token: stri
         reply_markup: { inline_keyboard: [
           [{ text: '✅ Accept', callback_data: `accept_${escrow.id}` }, { text: '❌ Decline', callback_data: `decline_${escrow.id}` }],
           [{ text: '👁 View Details', callback_data: `escrow_${escrow.id}` }],
-          [{ text: '🌐 Open Web', url: `${webUrl}/dashboard/escrows/${escrow.id}` }],
         ] },
       });
     }
@@ -535,7 +511,6 @@ async function createEscrowFromBot(chatId: number, username: string, token: stri
     text: msg,
     parse_mode: 'Markdown',
     reply_markup: { inline_keyboard: [
-      [{ text: '🌐 View on Web', url: `${webUrl}/dashboard/escrows/${escrow.id}` }],
       [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
     ] },
   });
@@ -605,7 +580,6 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
     buttons.push([{ text: '⚠️ Raise Dispute', callback_data: `dispute_${escrowId}` }]);
   }
 
-  buttons.push([{ text: '🌐 Open on Web', url: `${webUrl}/dashboard/escrows/${escrowId}` }]);
   buttons.push([{ text: '◀️ Back to Escrows', callback_data: 'my_escrows' }]);
 
   await sendTelegram(token, 'sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown', reply_markup: { inline_keyboard: buttons } });

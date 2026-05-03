@@ -123,9 +123,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Shield className="h-6 w-6 text-primary" />
           <span className="text-base font-bold gradient-text">EscrowBot</span>
         </Link>
-        <button onClick={() => setMobileOpen(true)} className="text-foreground">
-          <Menu className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <WalletConnectButton compact />
+          <button onClick={() => setMobileOpen(true)} className="text-foreground">
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Mobile sidebar overlay */}

@@ -769,6 +769,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_bot_username: { Args: never; Returns: string }
       get_public_chains: {
         Args: never
         Returns: {
