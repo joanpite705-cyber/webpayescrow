@@ -40,9 +40,8 @@ export default function Signup() {
     e.preventDefault();
     if (password !== confirmPassword) { toast.error("Passwords don't match"); return; }
     if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
-    if (!telegramUsername) { toast.error("Telegram username is required"); return; }
     setLoading(true);
-    const { error } = await signUp(email, password, telegramUsername.replace("@", ""));
+    const { error } = await signUp(email, password, telegramUsername.replace("@", "").trim());
     setLoading(false);
     if (error) toast.error(error.message);
     else { toast.success("Account created! Check your email to confirm."); navigate("/login"); }
@@ -83,9 +82,9 @@ export default function Signup() {
         <div className="glass-card p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="telegram">{t("telegram_username", lang)}</Label>
+              <Label htmlFor="telegram">{t("telegram_username", lang)} <span className="text-xs text-muted-foreground">(optional — link later)</span></Label>
               <Input id="telegram" value={telegramUsername} onChange={(e) => setTelegramUsername(e.target.value)}
-                placeholder="@yourusername" required className="mt-1.5" />
+                placeholder="@yourusername (optional)" className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="email">{t("email", lang)}</Label>

@@ -21,7 +21,7 @@ export default function CreateEscrow() {
   const [settings, setSettings] = useState<any>(null);
   const [form, setForm] = useState({
     title: "", description: "", amount: "", crypto_type: "USDT",
-    role: "buyer" as "buyer" | "seller", counterpart: "",
+    role: "buyer" as "buyer" | "seller", counterpart_email: "", counterpart_username: "",
     seller_wallet_address: "", seller_network: "",
   });
 
@@ -51,17 +51,19 @@ export default function CreateEscrow() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!form.counterpart_email) { toast.error("Counterpart email is required"); return; }
     setLoading(true);
 
-    const counterpartUsername = form.counterpart.replace("@", "").trim();
-    const { data: counterpartProfile } = await supabase
-      .from("profiles").select("id")
-      .ilike("telegram_username", counterpartUsername).maybeSingle();
-
-    if (!counterpartProfile) {
-      toast.error("Counterpart not found. Make sure they have an account.");
-      setLoading(false);
-      return;
+    const cpEmail = form.counterpart_email.trim().toLowerCase();
+    const cpUsername = form.counterpart_username.replace("@", "").trim() || null;
+    // Try to find existing profile by email via auth user lookup is not available client-side;
+    // we leave id null when not found — DB trigger links it on signup.
+    let counterpartId: string | null = null;
+    if (cpUsername) {
+      const { data: byUser } = await supabase
+        .from("profiles").select("id")
+        .ilike("telegram_username", cpUsername).maybeSingle();
+      if (byUser) counterpartId = byUser.id;
     }
 
     const escrowData: any = {
@@ -75,17 +77,25 @@ export default function CreateEscrow() {
 
     if (form.role === "buyer") {
       escrowData.buyer_id = user.id;
-      escrowData.seller_id = counterpartProfile.id;
+      escrowData.buyer_email = user.email;
+      escrowData.seller_id = counterpartId;
+      escrowData.seller_email = cpEmail;
+      escrowData.seller_username = cpUsername;
     } else {
       escrowData.seller_id = user.id;
-      escrowData.buyer_id = counterpartProfile.id;
+      escrowData.seller_email = user.email;
+      escrowData.buyer_id = counterpartId;
+      escrowData.buyer_email = cpEmail;
+      escrowData.buyer_username = cpUsername;
     }
 
     const { data: escrowResult, error } = await supabase.from("escrows").insert(escrowData).select().single();
     setLoading(false);
     if (error) toast.error(error.message);
     else {
-      toast.success("Escrow created! Waiting for counterpart to accept.");
+      toast.success(counterpartId
+        ? "Escrow created! Waiting for counterpart to accept."
+        : `Escrow created! ${cpEmail} will be linked once they sign up.`);
       navigate(`/dashboard/escrows/${escrowResult.id}`);
     }
   };
@@ -110,10 +120,18 @@ export default function CreateEscrow() {
                 </Select>
               </div>
               <div>
-                <Label>{t("counterpart", lang)}</Label>
-                <Input value={form.counterpart} onChange={(e) => setForm({ ...form, counterpart: e.target.value })}
-                  placeholder="@username" required className="mt-1.5" />
+                <Label>Counterpart email</Label>
+                <Input type="email" value={form.counterpart_email}
+                  onChange={(e) => setForm({ ...form, counterpart_email: e.target.value })}
+                  placeholder="them@example.com" required className="mt-1.5" />
               </div>
+            </div>
+            <div>
+              <Label>Counterpart Telegram username (optional)</Label>
+              <Input value={form.counterpart_username}
+                onChange={(e) => setForm({ ...form, counterpart_username: e.target.value })}
+                placeholder="@username (optional)" className="mt-1.5" />
+              <p className="text-xs text-muted-foreground mt-1">Used only to notify them via the bot if they linked it.</p>
             </div>
 
             <div>

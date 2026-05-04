@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useAccount, useDisconnect } from "wagmi";
+import { useWeb3Modal } from "@web3modal/wagmi/react";
 import { Button } from "@/components/ui/button";
 import { Wallet, LogOut } from "lucide-react";
 import { initWeb3Modal } from "@/lib/web3";
@@ -11,6 +12,7 @@ export default function WalletConnectButton({ compact = false }: { compact?: boo
   const { user } = useAuth();
   const { address, chainId, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+  const { open } = useWeb3Modal();
 
   useEffect(() => { initWeb3Modal(); }, []);
 
@@ -25,11 +27,6 @@ export default function WalletConnectButton({ compact = false }: { compact?: boo
     })();
   }, [user, address, chainId, isConnected]);
 
-  const open = () => {
-    // @ts-ignore - web3modal exposes this
-    document.querySelector("w3m-button")?.click?.();
-  };
-
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
@@ -43,16 +40,14 @@ export default function WalletConnectButton({ compact = false }: { compact?: boo
         <Button variant="ghost" size="icon" onClick={() => disconnect()} title="Disconnect">
           <LogOut className="h-4 w-4" />
         </Button>
-        {/* @ts-ignore web component */}
-        <w3m-button balance="hide" size="sm" />
       </div>
     );
   }
 
   return (
-    <>
-      {/* @ts-ignore web component */}
-      <w3m-button label="Connect Wallet" balance="hide" />
-    </>
+    <Button variant="outline" size={compact ? "sm" : "default"} className="gap-2" onClick={() => open()}>
+      <Wallet className="h-4 w-4" />
+      {compact ? "Connect" : "Connect Wallet"}
+    </Button>
   );
 }
