@@ -392,6 +392,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           amount: number
+          buyer_email: string | null
           buyer_id: string | null
           buyer_username: string | null
           chain_key: string | null
@@ -403,6 +404,7 @@ export type Database = {
           id: string
           moderator_id: string | null
           payment_deadline: string | null
+          seller_email: string | null
           seller_id: string | null
           seller_network: string | null
           seller_username: string | null
@@ -416,6 +418,7 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           amount?: number
+          buyer_email?: string | null
           buyer_id?: string | null
           buyer_username?: string | null
           chain_key?: string | null
@@ -427,6 +430,7 @@ export type Database = {
           id?: string
           moderator_id?: string | null
           payment_deadline?: string | null
+          seller_email?: string | null
           seller_id?: string | null
           seller_network?: string | null
           seller_username?: string | null
@@ -440,6 +444,7 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           amount?: number
+          buyer_email?: string | null
           buyer_id?: string | null
           buyer_username?: string | null
           chain_key?: string | null
@@ -451,6 +456,7 @@ export type Database = {
           id?: string
           moderator_id?: string | null
           payment_deadline?: string | null
+          seller_email?: string | null
           seller_id?: string | null
           seller_network?: string | null
           seller_username?: string | null
