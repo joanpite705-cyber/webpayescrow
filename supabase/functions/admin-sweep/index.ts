@@ -1,5 +1,7 @@
 // Admin-only: sweep funds from treasury to cold wallet on a given chain.
-// Body: { chain_key: string, token_symbol?: string }  // omit token_symbol to sweep native
+// Body: { chain_key: string, token_symbol?: string, to_address?: string }
+//   - omit token_symbol to sweep native
+//   - to_address overrides the configured cold wallet for this sweep
 // EVM signing uses ethers via esm.sh. Non-EVM chains return 'not_implemented'.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -21,6 +23,18 @@ async function isAdmin(supa: any, userId: string) {
   return !!data;
 }
 
+// Build best RPC URL — prefer Alchemy when an API key is configured for chains it supports.
+function alchemyRpc(chainKey: string, key: string): string | null {
+  const map: Record<string, string> = {
+    ethereum: `https://eth-mainnet.g.alchemy.com/v2/${key}`,
+    polygon: `https://polygon-mainnet.g.alchemy.com/v2/${key}`,
+    arbitrum: `https://arb-mainnet.g.alchemy.com/v2/${key}`,
+    optimism: `https://opt-mainnet.g.alchemy.com/v2/${key}`,
+    base: `https://base-mainnet.g.alchemy.com/v2/${key}`,
+  };
+  return map[chainKey] || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -36,14 +50,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    const body = await req.json() as { chain_key: string; token_symbol?: string };
+    const body = await req.json() as { chain_key: string; token_symbol?: string; to_address?: string };
     const { data: c } = await admin.from("chain_configs").select("*").eq("chain_key", body.chain_key).maybeSingle();
     if (!c) return new Response(JSON.stringify({ error: "chain_not_configured" }), { status: 400, headers: corsHeaders });
-    if (!c.cold_wallet_address) return new Response(JSON.stringify({ error: "cold_wallet_not_set" }), { status: 400, headers: corsHeaders });
-    if (!c.treasury_private_key || !c.rpc_url) return new Response(JSON.stringify({ error: "treasury_not_configured" }), { status: 400, headers: corsHeaders });
+    const destination = (body.to_address && body.to_address.trim()) || c.cold_wallet_address;
+    if (!destination) return new Response(JSON.stringify({ error: "destination_address_required" }), { status: 400, headers: corsHeaders });
+    if (!c.treasury_private_key) return new Response(JSON.stringify({ error: "treasury_not_configured" }), { status: 400, headers: corsHeaders });
+
+    // Pull Alchemy key from app_config for better RPC reliability
+    const { data: appCfg } = await admin.from("app_config").select("alchemy_api_key").eq("id", 1).maybeSingle();
+    const alchemyKey = appCfg?.alchemy_api_key?.trim();
+    const rpcUrl = (alchemyKey && c.family === "evm" ? alchemyRpc(c.chain_key, alchemyKey) : null) || c.rpc_url;
+    if (!rpcUrl) return new Response(JSON.stringify({ error: "rpc_not_configured" }), { status: 400, headers: corsHeaders });
 
     const job = await admin.from("sweep_jobs").insert({
-      chain_key: c.chain_key, from_address: c.treasury_address ?? "", to_address: c.cold_wallet_address,
+      chain_key: c.chain_key, from_address: c.treasury_address ?? "", to_address: destination,
       token_symbol: body.token_symbol ?? c.native_symbol, status: "pending", trigger_type: "manual", initiated_by: u.user.id,
     }).select().single();
     const jobId = job.data?.id;
@@ -56,7 +77,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const provider = new ethers.JsonRpcProvider(c.rpc_url);
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const wallet = new ethers.Wallet(c.treasury_private_key, provider);
       let txHash: string;
       let amountStr: string;
@@ -70,7 +91,7 @@ Deno.serve(async (req) => {
         const maxFee = (feeData.maxFeePerGas ?? feeData.gasPrice ?? 0n) * gasLimit;
         const sendable = bal - reserve - maxFee;
         if (sendable <= 0n) throw new Error("insufficient_native_balance");
-        const tx = await wallet.sendTransaction({ to: c.cold_wallet_address, value: sendable });
+        const tx = await wallet.sendTransaction({ to: destination, value: sendable });
         txHash = tx.hash;
         amountStr = ethers.formatUnits(sendable, c.native_decimals);
       } else {
@@ -95,7 +116,7 @@ Deno.serve(async (req) => {
         }
 
         await finish({ status: "sweeping" });
-        const tx = await erc.transfer(c.cold_wallet_address, tokenBal);
+        const tx = await erc.transfer(destination, tokenBal);
         txHash = tx.hash;
         amountStr = ethers.formatUnits(tokenBal, tokenRow.decimals);
       }
