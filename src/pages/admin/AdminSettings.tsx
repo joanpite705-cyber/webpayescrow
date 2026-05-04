@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Settings, Save, Percent, Link2, ShieldAlert } from "lucide-react";
+import { Settings, Save, Percent, Link2, ShieldAlert, KeyRound } from "lucide-react";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<any>(null);
   const [form, setForm] = useState({ fee_percentage: "2.0", signup_link: "", safety_message: "" });
   const [loading, setLoading] = useState(false);
+  const [keys, setKeys] = useState({ walletconnect_project_id: "", alchemy_api_key: "" });
+  const [savingKeys, setSavingKeys] = useState(false);
 
-  useEffect(() => { fetchSettings(); }, []);
+  useEffect(() => { fetchSettings(); fetchKeys(); }, []);
 
   const fetchSettings = async () => {
     const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle();
@@ -25,6 +27,26 @@ export default function AdminSettings() {
         safety_message: data.safety_message || "",
       });
     }
+  };
+
+  const fetchKeys = async () => {
+    const { data } = await (supabase as any).from("app_config").select("walletconnect_project_id,alchemy_api_key").eq("id", 1).maybeSingle();
+    if (data) setKeys({
+      walletconnect_project_id: data.walletconnect_project_id || "",
+      alchemy_api_key: data.alchemy_api_key || "",
+    });
+  };
+
+  const saveKeys = async () => {
+    setSavingKeys(true);
+    const { error } = await (supabase as any).from("app_config").upsert({
+      id: 1,
+      walletconnect_project_id: keys.walletconnect_project_id.trim() || null,
+      alchemy_api_key: keys.alchemy_api_key.trim() || null,
+      updated_at: new Date().toISOString(),
+    });
+    setSavingKeys(false);
+    if (error) toast.error(error.message); else toast.success("Web3 keys saved — reload page to apply WalletConnect");
   };
 
   const saveSettings = async () => {
@@ -47,6 +69,31 @@ export default function AdminSettings() {
         <Settings className="h-6 w-6 text-primary" /> Platform Settings
       </h1>
       <div className="max-w-2xl space-y-6">
+        <div className="glass-card p-8">
+          <h2 className="font-semibold mb-5 flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" /> Web3 Keys
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <Label>WalletConnect Project ID</Label>
+              <Input value={keys.walletconnect_project_id}
+                onChange={(e) => setKeys({ ...keys, walletconnect_project_id: e.target.value })}
+                placeholder="e.g. 18394b23745a7af92638a70d73f5628f" className="mt-1.5 font-mono text-xs" />
+              <p className="text-xs text-muted-foreground mt-1">Public ID from cloud.walletconnect.com — required for the wallet modal.</p>
+            </div>
+            <div>
+              <Label>Alchemy API Key</Label>
+              <Input type="password" value={keys.alchemy_api_key}
+                onChange={(e) => setKeys({ ...keys, alchemy_api_key: e.target.value })}
+                placeholder="alchemy api key" className="mt-1.5 font-mono text-xs" />
+              <p className="text-xs text-muted-foreground mt-1">Used by sweeps & balance lookups for ETH, Polygon, Arbitrum, Optimism, Base. Falls back to public RPCs if empty.</p>
+            </div>
+            <Button onClick={saveKeys} disabled={savingKeys} className="gap-2">
+              <Save className="h-4 w-4" /> {savingKeys ? "Saving..." : "Save Web3 Keys"}
+            </Button>
+          </div>
+        </div>
+
         <div className="glass-card p-8">
           <h2 className="font-semibold mb-5 flex items-center gap-2">
             <Percent className="h-5 w-5 text-primary" /> Fee Configuration
