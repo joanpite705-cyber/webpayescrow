@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowDownToLine, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowDownToLine, RefreshCw, ExternalLink, Loader2, Target } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminSweeps() {
@@ -10,6 +12,7 @@ export default function AdminSweeps() {
   const [tokens, setTokens] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   const load = async () => {
     const { data: c } = await (supabase as any).from("chain_configs").select("*").eq("is_active", true).order("sort_order");
@@ -22,7 +25,8 @@ export default function AdminSweeps() {
   const sweep = async (chain_key: string, token_symbol?: string) => {
     const key = `${chain_key}:${token_symbol ?? "native"}`;
     setBusy(key);
-    const { data, error } = await supabase.functions.invoke("admin-sweep", { body: { chain_key, token_symbol } });
+    const to_address = overrides[chain_key]?.trim() || undefined;
+    const { data, error } = await supabase.functions.invoke("admin-sweep", { body: { chain_key, token_symbol, to_address } });
     setBusy(null);
     if (error || (data as any)?.error) toast.error(((data as any)?.error) || error?.message || "Sweep failed");
     else toast.success(`Sweep submitted: ${(data as any)?.tx?.slice(0, 12)}…`);
@@ -51,13 +55,22 @@ export default function AdminSweeps() {
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.family === "evm" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{c.family.toUpperCase()}</span>
               </div>
+              <div className="mb-3">
+                <Label className="text-[10px] flex items-center gap-1 text-muted-foreground"><Target className="h-3 w-3" /> Override destination (optional)</Label>
+                <Input
+                  className="mt-1 font-mono text-xs h-8"
+                  placeholder={c.cold_wallet_address || "Paste destination address"}
+                  value={overrides[c.chain_key] || ""}
+                  onChange={(e) => setOverrides({ ...overrides, [c.chain_key]: e.target.value })}
+                />
+              </div>
               <div className="space-y-2">
-                <Button size="sm" className="w-full gap-2" disabled={!c.cold_wallet_address || busy === `${c.chain_key}:native`} onClick={() => sweep(c.chain_key)}>
+                <Button size="sm" className="w-full gap-2" disabled={!(c.cold_wallet_address || overrides[c.chain_key]?.trim()) || busy === `${c.chain_key}:native`} onClick={() => sweep(c.chain_key)}>
                   {busy === `${c.chain_key}:native` ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}
                   Sweep {c.native_symbol}
                 </Button>
                 {chainTokens.map((t) => (
-                  <Button key={t.id} size="sm" variant="outline" className="w-full gap-2" disabled={!c.cold_wallet_address || busy === `${c.chain_key}:${t.symbol}`} onClick={() => sweep(c.chain_key, t.symbol)}>
+                  <Button key={t.id} size="sm" variant="outline" className="w-full gap-2" disabled={!(c.cold_wallet_address || overrides[c.chain_key]?.trim()) || busy === `${c.chain_key}:${t.symbol}`} onClick={() => sweep(c.chain_key, t.symbol)}>
                     {busy === `${c.chain_key}:${t.symbol}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}
                     Sweep {t.symbol}
                   </Button>

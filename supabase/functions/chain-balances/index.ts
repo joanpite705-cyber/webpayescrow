@@ -29,6 +29,17 @@ type TokenCfg = {
 
 function hex(n: bigint) { return "0x" + n.toString(16); }
 
+function alchemyRpc(chainKey: string, key: string): string | null {
+  const map: Record<string, string> = {
+    ethereum: `https://eth-mainnet.g.alchemy.com/v2/${key}`,
+    polygon: `https://polygon-mainnet.g.alchemy.com/v2/${key}`,
+    arbitrum: `https://arb-mainnet.g.alchemy.com/v2/${key}`,
+    optimism: `https://opt-mainnet.g.alchemy.com/v2/${key}`,
+    base: `https://base-mainnet.g.alchemy.com/v2/${key}`,
+  };
+  return map[chainKey] || null;
+}
+
 async function evmRpc(rpc: string, method: string, params: any[]) {
   const r = await fetch(rpc, {
     method: "POST",
@@ -97,6 +108,8 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: chains } = await admin.from("chain_configs").select("chain_key,family,chain_id,rpc_url,native_symbol,native_decimals").eq("is_active", true);
     const { data: tokens } = await admin.from("chain_tokens").select("chain_key,symbol,contract_address,decimals").eq("is_active", true);
+    const { data: appCfg } = await admin.from("app_config").select("alchemy_api_key").eq("id", 1).maybeSingle();
+    const alchemyKey: string | undefined = (appCfg as any)?.alchemy_api_key?.trim();
 
     const chainMap = new Map<string, ChainCfg>();
     (chains as ChainCfg[] ?? []).forEach((c) => chainMap.set(c.chain_key, c));
@@ -112,12 +125,15 @@ Deno.serve(async (req) => {
       const c = chainMap.get(a.chain_key);
       if (!c) continue;
       try {
-        if (c.family === "evm" && c.rpc_url) {
-          const native = await evmNativeBalance(c.rpc_url, a.address);
+        const evmRpcUrl = c.family === "evm"
+          ? ((alchemyKey && alchemyRpc(c.chain_key, alchemyKey)) || c.rpc_url)
+          : null;
+        if (c.family === "evm" && evmRpcUrl) {
+          const native = await evmNativeBalance(evmRpcUrl, a.address);
           out.push({ chain_key: c.chain_key, symbol: c.native_symbol, address: a.address, balance: native, decimals: c.native_decimals });
           for (const t of tokensByChain.get(c.chain_key) ?? []) {
             try {
-              const b = await evmTokenBalance(c.rpc_url, t.contract_address, a.address);
+              const b = await evmTokenBalance(evmRpcUrl, t.contract_address, a.address);
               if (b !== "0") out.push({ chain_key: c.chain_key, symbol: t.symbol, address: a.address, balance: b, decimals: t.decimals, contract: t.contract_address });
             } catch { /* ignore token errors */ }
           }

@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          alchemy_api_key: string | null
+          id: number
+          updated_at: string
+          walletconnect_project_id: string | null
+        }
+        Insert: {
+          alchemy_api_key?: string | null
+          id?: number
+          updated_at?: string
+          walletconnect_project_id?: string | null
+        }
+        Update: {
+          alchemy_api_key?: string | null
+          id?: number
+          updated_at?: string
+          walletconnect_project_id?: string | null
+        }
+        Relationships: []
+      }
       balance_ledger: {
         Row: {
           amount: number
@@ -799,6 +820,7 @@ export type Database = {
           symbol: string
         }[]
       }
+      get_walletconnect_project_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
