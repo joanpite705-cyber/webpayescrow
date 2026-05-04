@@ -37,8 +37,8 @@ import InstallPrompt from "./components/InstallPrompt";
 
 const queryClient = new QueryClient();
 
-// Initialize Web3Modal once
-if (typeof window !== "undefined") initWeb3Modal();
+// Initialize Web3Modal once (async — pulls admin-configured project id)
+if (typeof window !== "undefined") { initWeb3Modal(); }
 
 const App = () => (
   <WagmiProvider config={wagmiConfig}>
