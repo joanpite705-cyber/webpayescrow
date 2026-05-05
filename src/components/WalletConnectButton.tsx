@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { useWeb3Modal } from "@web3modal/wagmi/react";
 import { Button } from "@/components/ui/button";
-import { Wallet, LogOut } from "lucide-react";
-import { initWeb3Modal } from "@/lib/web3";
+import { Wallet, LogOut, Loader2 } from "lucide-react";
+import { initWeb3Stack } from "@/lib/web3";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -13,8 +13,9 @@ export default function WalletConnectButton({ compact = false }: { compact?: boo
   const { address, chainId, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { open } = useWeb3Modal();
+  const [opening, setOpening] = useState(false);
 
-  useEffect(() => { initWeb3Modal(); }, []);
+  useEffect(() => { initWeb3Stack(); }, []);
 
   // Persist connected wallet to DB
   useEffect(() => {
@@ -44,9 +45,23 @@ export default function WalletConnectButton({ compact = false }: { compact?: boo
     );
   }
 
+  const handleOpen = async () => {
+    if (opening) return;
+    setOpening(true);
+    try {
+      await initWeb3Stack();
+      await open({ view: "Connect" });
+    } catch (e: any) {
+      console.error("Wallet modal failed:", e);
+      toast.error(e?.message || "Could not open wallet selector");
+    } finally {
+      setTimeout(() => setOpening(false), 800);
+    }
+  };
+
   return (
-    <Button variant="outline" size={compact ? "sm" : "default"} className="gap-2" onClick={() => open()}>
-      <Wallet className="h-4 w-4" />
+    <Button variant="outline" size={compact ? "sm" : "default"} className="gap-2" onClick={handleOpen} disabled={opening}>
+      {opening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
       {compact ? "Connect" : "Connect Wallet"}
     </Button>
   );
