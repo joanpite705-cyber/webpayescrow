@@ -116,17 +116,34 @@ export default function AdminSweeps() {
             {jobs.map((j) => {
               const chain = chains.find((c) => c.chain_key === j.chain_key);
               const explorer = chain?.explorer_url;
+              const statusIcon =
+                j.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> :
+                j.status === "failed" ? <XCircle className="h-4 w-4 text-destructive" /> :
+                j.status === "gas_funding" ? <Fuel className="h-4 w-4 text-amber-500 animate-pulse" /> :
+                j.status === "sweeping" ? <Activity className="h-4 w-4 text-primary animate-pulse" /> :
+                <Clock className="h-4 w-4 text-muted-foreground animate-pulse" />;
               return (
                 <div key={j.id} className="p-4 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{j.chain_key.toUpperCase()} · {j.token_symbol} {j.amount ? `· ${j.amount}` : ""}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(j.created_at).toLocaleString()} · {j.status}{j.error_message ? ` · ${j.error_message}` : ""}</p>
+                  <div className="flex items-start gap-3">
+                    {statusIcon}
+                    <div>
+                      <p className="font-medium">{j.chain_key.toUpperCase()} · {j.token_symbol} {j.amount ? `· ${j.amount}` : ""}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(j.created_at).toLocaleString()} · <span className="uppercase">{j.status}</span>{j.error_message ? ` · ${j.error_message}` : ""}</p>
+                      <p className="text-[10px] text-muted-foreground/70 font-mono truncate max-w-[20rem]">→ {j.to_address}</p>
+                    </div>
                   </div>
-                  {j.sweep_tx && explorer && (
-                    <a href={`${explorer}/tx/${j.sweep_tx}`} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1 hover:underline">
-                      View <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
+                  <div className="flex flex-col gap-1 items-end">
+                    {j.gas_funding_tx && explorer && (
+                      <a href={`${explorer}/tx/${j.gas_funding_tx}`} target="_blank" rel="noreferrer" className="text-amber-500 text-[10px] flex items-center gap-1 hover:underline">
+                        Gas tx <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {j.sweep_tx && explorer && (
+                      <a href={`${explorer}/tx/${j.sweep_tx}`} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1 hover:underline">
+                        Sweep tx <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
