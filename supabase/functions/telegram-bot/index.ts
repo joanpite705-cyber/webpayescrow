@@ -433,6 +433,34 @@ async function handleConversation(chatId: number, text: string, username: string
       },
     });
   }
+
+  if (state.step === 'awaiting_payout_address') {
+    const address = text.trim();
+    if (address.length < 20) {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Address looks invalid. Paste a valid wallet address.' });
+    }
+    const escrowId = state.data?.escrowId;
+    const network = state.data?.network || '';
+    const profile = await ensureProfile(chatId, username, token);
+    if (escrowId && profile) {
+      await supabase.from('escrows').update({
+        seller_wallet_address: address,
+        seller_network: network,
+      }).eq('id', escrowId);
+      await supabase.from('escrow_messages').insert({
+        escrow_id: escrowId, sender_id: profile.id,
+        message: `💼 Seller submitted payout wallet (${network}):\n\`${address}\``,
+        message_type: 'system', message_label: 'Moderator',
+      });
+    }
+    await clearSession(chatId);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: `✅ *Payout wallet saved*\n\nNetwork: ${network}\nAddress: \`${address}\`\n\nThe admin will process your payout shortly.`,
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    });
+  }
 }
 
 // ---------- create escrow ----------
