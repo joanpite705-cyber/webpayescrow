@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { WagmiProvider } from "wagmi";
-import { wagmiConfig, initWeb3Modal } from "@/lib/web3";
+import type { Config } from "wagmi";
+import { initWeb3Stack } from "@/lib/web3";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,11 +39,18 @@ import InstallPrompt from "./components/InstallPrompt";
 
 const queryClient = new QueryClient();
 
-// Initialize Web3Modal once (async — pulls admin-configured project id)
-if (typeof window !== "undefined") { initWeb3Modal(); }
-
-const App = () => (
-  <WagmiProvider config={wagmiConfig}>
+const App = () => {
+  const [config, setConfig] = useState<Config | null>(null);
+  useEffect(() => { initWeb3Stack().then(setConfig); }, []);
+  if (!config) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground text-sm">
+        Loading…
+      </div>
+    );
+  }
+  return (
+  <WagmiProvider config={config}>
    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -86,6 +95,7 @@ const App = () => (
     </TooltipProvider>
    </QueryClientProvider>
   </WagmiProvider>
-);
+  );
+};
 
 export default App;
