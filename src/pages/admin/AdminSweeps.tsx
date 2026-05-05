@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDownToLine, RefreshCw, ExternalLink, Loader2, Target } from "lucide-react";
+import { ArrowDownToLine, RefreshCw, ExternalLink, Loader2, Target, Clock, CheckCircle2, XCircle, Fuel, Activity } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminSweeps() {
@@ -20,7 +20,23 @@ export default function AdminSweeps() {
     const { data: j } = await (supabase as any).from("sweep_jobs").select("*").order("created_at", { ascending: false }).limit(30);
     setChains(c || []); setTokens(t || []); setJobs(j || []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("sweep_jobs_live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "sweep_jobs" }, (payload: any) => {
+        setJobs((prev) => {
+          const row = payload.new || payload.old;
+          if (!row) return prev;
+          if (payload.eventType === "DELETE") return prev.filter((j) => j.id !== row.id);
+          const idx = prev.findIndex((j) => j.id === row.id);
+          if (idx === -1) return [row, ...prev].slice(0, 50);
+          const next = [...prev]; next[idx] = row; return next;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const sweep = async (chain_key: string, token_symbol?: string) => {
     const key = `${chain_key}:${token_symbol ?? "native"}`;
@@ -46,6 +62,10 @@ export default function AdminSweeps() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {chains.map((c) => {
           const chainTokens = tokens.filter((t) => t.chain_key === c.chain_key);
+          const chainJobs = jobs.filter((j) => j.chain_key === c.chain_key);
+          const pending = chainJobs.filter((j) => ["pending", "sweeping", "gas_funding"].includes(j.status)).length;
+          const completed = chainJobs.filter((j) => j.status === "completed").length;
+          const failed = chainJobs.filter((j) => j.status === "failed").length;
           return (
             <div key={c.id} className="glass-card p-5">
               <div className="flex items-center justify-between mb-3">
@@ -54,6 +74,11 @@ export default function AdminSweeps() {
                   <p className="text-xs text-muted-foreground font-mono truncate max-w-[16rem]">{c.cold_wallet_address || "no cold wallet set"}</p>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.family === "evm" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>{c.family.toUpperCase()}</span>
+              </div>
+              <div className="flex items-center gap-3 mb-3 text-[11px]">
+                <span className="flex items-center gap-1 text-amber-500"><Clock className="h-3 w-3" /> {pending}</span>
+                <span className="flex items-center gap-1 text-emerald-500"><CheckCircle2 className="h-3 w-3" /> {completed}</span>
+                <span className="flex items-center gap-1 text-destructive"><XCircle className="h-3 w-3" /> {failed}</span>
               </div>
               <div className="mb-3">
                 <Label className="text-[10px] flex items-center gap-1 text-muted-foreground"><Target className="h-3 w-3" /> Override destination (optional)</Label>
@@ -91,17 +116,34 @@ export default function AdminSweeps() {
             {jobs.map((j) => {
               const chain = chains.find((c) => c.chain_key === j.chain_key);
               const explorer = chain?.explorer_url;
+              const statusIcon =
+                j.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> :
+                j.status === "failed" ? <XCircle className="h-4 w-4 text-destructive" /> :
+                j.status === "gas_funding" ? <Fuel className="h-4 w-4 text-amber-500 animate-pulse" /> :
+                j.status === "sweeping" ? <Activity className="h-4 w-4 text-primary animate-pulse" /> :
+                <Clock className="h-4 w-4 text-muted-foreground animate-pulse" />;
               return (
                 <div key={j.id} className="p-4 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{j.chain_key.toUpperCase()} · {j.token_symbol} {j.amount ? `· ${j.amount}` : ""}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(j.created_at).toLocaleString()} · {j.status}{j.error_message ? ` · ${j.error_message}` : ""}</p>
+                  <div className="flex items-start gap-3">
+                    {statusIcon}
+                    <div>
+                      <p className="font-medium">{j.chain_key.toUpperCase()} · {j.token_symbol} {j.amount ? `· ${j.amount}` : ""}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(j.created_at).toLocaleString()} · <span className="uppercase">{j.status}</span>{j.error_message ? ` · ${j.error_message}` : ""}</p>
+                      <p className="text-[10px] text-muted-foreground/70 font-mono truncate max-w-[20rem]">→ {j.to_address}</p>
+                    </div>
                   </div>
-                  {j.sweep_tx && explorer && (
-                    <a href={`${explorer}/tx/${j.sweep_tx}`} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1 hover:underline">
-                      View <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
+                  <div className="flex flex-col gap-1 items-end">
+                    {j.gas_funding_tx && explorer && (
+                      <a href={`${explorer}/tx/${j.gas_funding_tx}`} target="_blank" rel="noreferrer" className="text-amber-500 text-[10px] flex items-center gap-1 hover:underline">
+                        Gas tx <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    {j.sweep_tx && explorer && (
+                      <a href={`${explorer}/tx/${j.sweep_tx}`} target="_blank" rel="noreferrer" className="text-primary text-xs flex items-center gap-1 hover:underline">
+                        Sweep tx <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
