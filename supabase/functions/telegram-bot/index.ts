@@ -810,70 +810,73 @@ Deno.serve(async (req) => {
 
       // Handle release details and dispute reason from conversation
       if (body.update_id !== undefined) {
-        // Check for release/dispute sessions in conversation handler
-        const msg = body.message;
-        if (msg) {
-          const cid = msg.chat.id;
-          const session = await getSession(cid);
-          if (session?.step === 'awaiting_release_details') {
-            const profile = await ensureProfile(cid, msg.from?.username || '', token);
-            if (profile) {
-              const escrowId = session.data?.escrowId;
-              const content = (msg.text || '').trim();
-              // Save to escrow_releases
-              await supabase.from('escrow_releases').insert({
-                escrow_id: escrowId,
-                sender_id: profile.id,
-                release_type: 'text',
-                content,
-                title: 'Delivery Details',
-              });
-              // Post in chat
-              await supabase.from('escrow_messages').insert({
-                escrow_id: escrowId,
-                sender_id: profile.id,
-                message: `📦 *Delivery Details*\n\n${content}`,
-                message_type: 'release',
-                message_label: 'Seller Delivery',
-              });
-              await clearSession(cid);
-              await sendTelegram(token, 'sendMessage', {
-                chat_id: cid,
-                text: '✅ Delivery details shared with buyer!\n\nYou can now release funds when ready.',
-                reply_markup: { inline_keyboard: [
-                  [{ text: '🎉 Release Funds', callback_data: `release_${escrowId}` }],
-                  [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
-                ] },
-              });
-              return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        // Acknowledge Telegram immediately, process update in background.
+        // This prevents Telegram from retrying due to slow handlers.
+        const work = (async () => {
+          try {
+            const msg = body.message;
+            if (msg) {
+              const cid = msg.chat.id;
+              const session = await getSession(cid);
+              if (session?.step === 'awaiting_release_details') {
+                const profile = await ensureProfile(cid, msg.from?.username || '', token);
+                if (profile) {
+                  const escrowId = session.data?.escrowId;
+                  const content = (msg.text || '').trim();
+                  await supabase.from('escrow_releases').insert({
+                    escrow_id: escrowId, sender_id: profile.id,
+                    release_type: 'text', content, title: 'Delivery Details',
+                  });
+                  await supabase.from('escrow_messages').insert({
+                    escrow_id: escrowId, sender_id: profile.id,
+                    message: `📦 *Delivery Details*\n\n${content}`,
+                    message_type: 'release', message_label: 'Seller Delivery',
+                  });
+                  await clearSession(cid);
+                  await sendTelegram(token, 'sendMessage', {
+                    chat_id: cid,
+                    text: '✅ Delivery details shared with buyer!\n\nYou can now release funds when ready.',
+                    reply_markup: { inline_keyboard: [
+                      [{ text: '🎉 Release Funds', callback_data: `release_${escrowId}` }],
+                      [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+                    ] },
+                  });
+                  return;
+                }
+              }
+              if (session?.step === 'awaiting_dispute_reason') {
+                const profile = await ensureProfile(cid, msg.from?.username || '', token);
+                if (profile) {
+                  const escrowId = session.data?.escrowId;
+                  const reason = (msg.text || '').trim();
+                  await supabase.from('disputes').insert({ escrow_id: escrowId, raised_by: profile.id, reason });
+                  await supabase.from('escrows').update({ status: 'disputed' }).eq('id', escrowId);
+                  await supabase.from('escrow_messages').insert({
+                    escrow_id: escrowId, sender_id: profile.id,
+                    message: '🛡️ Moderator has joined the chat. A dispute has been raised and will be reviewed.',
+                    message_type: 'system', message_label: 'Moderator',
+                  });
+                  await clearSession(cid);
+                  await sendTelegram(token, 'sendMessage', {
+                    chat_id: cid, text: '⚠️ Dispute raised! A moderator will review shortly.',
+                    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+                  });
+                  return;
+                }
+              }
             }
+            await handleUpdate(body, token);
+          } catch (e) {
+            console.error('telegram-bot bg error', e);
           }
-          if (session?.step === 'awaiting_dispute_reason') {
-            const profile = await ensureProfile(cid, msg.from?.username || '', token);
-            if (profile) {
-              const escrowId = session.data?.escrowId;
-              const reason = (msg.text || '').trim();
-              await supabase.from('disputes').insert({
-                escrow_id: escrowId, raised_by: profile.id, reason,
-              });
-              await supabase.from('escrows').update({ status: 'disputed' }).eq('id', escrowId);
-              await supabase.from('escrow_messages').insert({
-                escrow_id: escrowId, sender_id: profile.id,
-                message: '🛡️ Moderator has joined the chat. A dispute has been raised and will be reviewed.',
-                message_type: 'system', message_label: 'Moderator',
-              });
-              await clearSession(cid);
-              await sendTelegram(token, 'sendMessage', {
-                chat_id: cid,
-                text: '⚠️ Dispute raised! A moderator will review shortly.',
-                reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
-              });
-              return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-            }
-          }
+        })();
+        // @ts-ignore — EdgeRuntime.waitUntil exists on Supabase functions
+        if (typeof EdgeRuntime !== 'undefined' && (EdgeRuntime as any).waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(work);
+        } else {
+          work.catch(() => {});
         }
-
-        await handleUpdate(body, token);
         return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
