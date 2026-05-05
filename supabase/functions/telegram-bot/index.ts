@@ -688,8 +688,19 @@ async function handleCallback(query: any, token: string) {
         message_type: 'system', message_label: 'Moderator',
       });
     }
-    return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '🎉 *Trade Complete!* Funds released.\n\nPlease rate your counterpart on the web.',
-      parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] } });
+    // Prompt seller to submit receive wallet so admin can sweep payout
+    await setSession(chatId, { step: 'awaiting_payout_chain', data: { escrowId } }, username);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: '🎉 *Trade Complete!*\n\n💸 *Submit your payout wallet* so the admin can release your funds.\n\nSelect the network you want to receive on:',
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [
+        [{ text: 'TRC20 (USDT)', callback_data: 'payout_chain_TRC20' }, { text: 'ERC20 (USDT/ETH)', callback_data: 'payout_chain_ERC20' }],
+        [{ text: 'Bitcoin', callback_data: 'payout_chain_BTC' }, { text: 'BSC (BEP20)', callback_data: 'payout_chain_BEP20' }],
+        [{ text: 'Polygon', callback_data: 'payout_chain_POLYGON' }, { text: 'Solana', callback_data: 'payout_chain_SOL' }],
+        [{ text: 'Skip', callback_data: 'payout_skip' }],
+      ] },
+    });
   }
 
   if (data.startsWith('dispute_')) {
@@ -699,6 +710,26 @@ async function handleCallback(query: any, token: string) {
       chat_id: chatId,
       text: '⚠️ *Raise Dispute*\n\nDescribe the issue in one message:',
       parse_mode: 'Markdown',
+    });
+  }
+
+  if (data.startsWith('payout_chain_')) {
+    const network = data.replace('payout_chain_', '');
+    const session = await getSession(chatId);
+    if (!session?.data?.escrowId) return;
+    await setSession(chatId, { step: 'awaiting_payout_address', data: { ...session.data, network } }, username);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: `💼 *Network: ${network}*\n\nNow paste the *exact* wallet address where you want to receive your funds.\n\n⚠️ Double-check before sending — wrong address = lost funds.`,
+      parse_mode: 'Markdown',
+    });
+  }
+
+  if (data === 'payout_skip') {
+    await clearSession(chatId);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: 'Skipped. You can submit your payout wallet later from the web dashboard.',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
     });
   }
 
