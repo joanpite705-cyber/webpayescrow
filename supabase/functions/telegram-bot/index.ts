@@ -1061,6 +1061,20 @@ Deno.serve(async (req) => {
                     message: `📦 *Delivery Details*\n\n${content}`,
                     message_type: 'release', message_label: 'Seller Delivery',
                   });
+                  // Notify buyer in the bot
+                  const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+                  if (esc?.buyer_id) {
+                    const { data: buyerProf } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+                    if (buyerProf?.telegram_chat_id) {
+                      const blang = buyerProf.language || 'en';
+                      await sendTelegram(token, 'sendMessage', {
+                        chat_id: parseInt(buyerProf.telegram_chat_id),
+                        text: tr('delivery_received', blang, { title: esc.title, content }),
+                        parse_mode: 'Markdown',
+                        reply_markup: { inline_keyboard: [[{ text: '👁 View Escrow', callback_data: `escrow_${escrowId}` }]] },
+                      });
+                    }
+                  }
                   await clearSession(cid);
                   await sendTelegram(token, 'sendMessage', {
                     chat_id: cid,
@@ -1079,15 +1093,23 @@ Deno.serve(async (req) => {
                   const escrowId = session.data?.escrowId;
                   const reason = (msg.text || '').trim();
                   await supabase.from('disputes').insert({ escrow_id: escrowId, raised_by: profile.id, reason });
-                  await supabase.from('escrows').update({ status: 'disputed' }).eq('id', escrowId);
+                  // Assign first available moderator
+                  const { data: modRole } = await supabase.from('user_roles').select('user_id').in('role', ['moderator', 'admin']).limit(1).single();
+                  const moderatorId = modRole?.user_id || null;
+                  let modUsername = 'Moderator';
+                  if (moderatorId) {
+                    const { data: modProf } = await supabase.from('profiles').select('telegram_username,display_name').eq('id', moderatorId).single();
+                    modUsername = modProf?.telegram_username ? `@${modProf.telegram_username}` : (modProf?.display_name || 'Moderator');
+                  }
+                  await supabase.from('escrows').update({ status: 'disputed', moderator_id: moderatorId }).eq('id', escrowId);
                   await supabase.from('escrow_messages').insert({
                     escrow_id: escrowId, sender_id: profile.id,
-                    message: '🛡️ Moderator has joined the chat. A dispute has been raised and will be reviewed.',
+                    message: `🛡️ ${modUsername} has joined the chat. A dispute has been raised and will be reviewed.`,
                     message_type: 'system', message_label: 'Moderator',
                   });
                   await clearSession(cid);
                   await sendTelegram(token, 'sendMessage', {
-                    chat_id: cid, text: '⚠️ Dispute raised! A moderator will review shortly.',
+                    chat_id: cid, text: `⚠️ Dispute raised! ${modUsername} will review shortly.`,
                     reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
                   });
                   return;
