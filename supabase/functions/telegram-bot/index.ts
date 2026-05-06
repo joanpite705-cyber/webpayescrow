@@ -920,6 +920,18 @@ async function handleCallbackImpl(query: any, token: string) {
         message_type: 'system', message_label: 'Moderator',
       });
     }
+    // Notify buyer
+    const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+    if (esc?.buyer_id) {
+      const { data: bp } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+      if (bp?.telegram_chat_id) {
+        await sendTelegram(token, 'sendMessage', {
+          chat_id: parseInt(bp.telegram_chat_id),
+          text: tr('funds_released_buyer', bp.language || 'en', { title: esc.title }),
+          parse_mode: 'Markdown',
+        });
+      }
+    }
     // Prompt seller to submit receive wallet so admin can sweep payout
     await setSession(chatId, { step: 'awaiting_payout_chain', data: { escrowId } }, username);
     return sendTelegram(token, 'sendMessage', {
