@@ -745,7 +745,7 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
 // ---------- callbacks ----------
 
 async function handleCallback(query: any, token: string) {
-  // (handlers below)
+  return handleCallbackImpl(query, token);
 }
 
 async function handleBalance(chatId: number, username: string, token: string) {
