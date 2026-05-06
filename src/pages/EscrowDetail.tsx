@@ -212,7 +212,20 @@ export default function EscrowDetail() {
     });
     if (error) toast.error(error.message);
     else {
-      await supabase.from("escrows").update({ status: "disputed" as const }).eq("id", escrow.id);
+      // Assign first available moderator
+      const { data: modRow } = await supabase.from("user_roles").select("user_id").in("role", ["moderator", "admin"]).limit(1).maybeSingle();
+      const moderatorId = modRow?.user_id || null;
+      let modUsername = "Moderator";
+      if (moderatorId) {
+        const { data: modProf } = await supabase.from("profiles").select("telegram_username,display_name").eq("id", moderatorId).maybeSingle();
+        modUsername = modProf?.telegram_username ? `@${modProf.telegram_username}` : (modProf?.display_name || "Moderator");
+      }
+      await supabase.from("escrows").update({ status: "disputed" as const, moderator_id: moderatorId }).eq("id", escrow.id);
+      await supabase.from("escrow_messages").insert({
+        escrow_id: id!, sender_id: user.id,
+        message: `🛡️ ${modUsername} has joined the chat. Dispute under review.`,
+        message_type: "system", message_label: "Moderator",
+      });
       toast.success("Dispute raised. A moderator will join shortly.");
       setDisputeReason(""); setShowDispute(false);
       fetchData();
