@@ -537,6 +537,9 @@ export type Database = {
           crypto_type: string
           escrow_id: string
           id: string
+          paid_at: string | null
+          payer_id: string | null
+          payer_username: string | null
           status: Database["public"]["Enums"]["payment_status"]
           tx_hash: string | null
           updated_at: string
@@ -550,6 +553,9 @@ export type Database = {
           crypto_type: string
           escrow_id: string
           id?: string
+          paid_at?: string | null
+          payer_id?: string | null
+          payer_username?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           tx_hash?: string | null
           updated_at?: string
@@ -563,6 +569,9 @@ export type Database = {
           crypto_type?: string
           escrow_id?: string
           id?: string
+          paid_at?: string | null
+          payer_id?: string | null
+          payer_username?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           tx_hash?: string | null
           updated_at?: string

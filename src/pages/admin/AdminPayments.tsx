@@ -16,7 +16,7 @@ export default function AdminPayments() {
   useEffect(() => { fetchPayments(); }, []);
 
   const fetchPayments = async () => {
-    const { data } = await supabase.from("payments").select("*, escrows(title, amount, crypto_type, fee_amount)").order("created_at", { ascending: false });
+    const { data } = await (supabase as any).from("payments").select("*, escrows(title, amount, crypto_type, fee_amount, buyer_username, buyer_email)").order("created_at", { ascending: false });
     setPayments(data || []);
   };
 
@@ -32,6 +32,12 @@ export default function AdminPayments() {
 
     // Update escrow status to confirmed
     await supabase.from("escrows").update({ status: "confirmed" as const }).eq("id", payment.escrow_id);
+    // Notify buyer & seller in Telegram
+    try {
+      await supabase.functions.invoke("telegram-bot", {
+        body: { action: "notify_payment_confirmed", escrow_id: payment.escrow_id },
+      });
+    } catch (e) { /* non-fatal */ }
     toast.success("Payment confirmed! Seller can now release.");
     fetchPayments();
   };
@@ -58,6 +64,8 @@ export default function AdminPayments() {
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="p-4">Escrow</th>
+                <th className="p-4">Payer</th>
+                <th className="p-4">Paid At</th>
                 <th className="p-4">Submitted Amount</th>
                 <th className="p-4">Fee</th>
                 <th className="p-4">Crypto</th>
@@ -71,6 +79,11 @@ export default function AdminPayments() {
               {payments.map((p) => (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-secondary/20">
                   <td className="p-4 font-medium">{p.escrows?.title || "—"}</td>
+                  <td className="p-4 text-xs">
+                    <div className="font-medium">{p.payer_username ? `@${p.payer_username}` : (p.escrows?.buyer_username ? `@${p.escrows.buyer_username}` : "—")}</div>
+                    <div className="text-muted-foreground truncate max-w-[160px]">{p.escrows?.buyer_email || ""}</div>
+                  </td>
+                  <td className="p-4 text-xs text-muted-foreground whitespace-nowrap">{p.paid_at ? new Date(p.paid_at).toLocaleString() : new Date(p.created_at).toLocaleString()}</td>
                   <td className="p-4 font-mono">{p.amount}</td>
                   <td className="p-4 font-mono text-warning">{p.escrows?.fee_amount || 0}</td>
                   <td className="p-4">{p.crypto_type}</td>
@@ -100,7 +113,7 @@ export default function AdminPayments() {
                 </tr>
               ))}
               {payments.length === 0 && (
-                <tr><td colSpan={8} className="p-10 text-center text-muted-foreground">No payments yet.</td></tr>
+                <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">No payments yet.</td></tr>
               )}
             </tbody>
           </table>

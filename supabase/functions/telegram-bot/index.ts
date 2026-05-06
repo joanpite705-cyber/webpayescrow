@@ -9,6 +9,101 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// ---------- i18n ----------
+const LANGS: Record<string, { label: string; flag: string }> = {
+  en: { label: 'English', flag: '🌐' },
+  zh: { label: '中文', flag: '🌐' },
+  ru: { label: 'Русский', flag: '🌐' },
+  ko: { label: '한국어', flag: '🌐' },
+  fr: { label: 'Français', flag: '🌐' },
+  es: { label: 'Español', flag: '🌐' },
+  ar: { label: 'العربية', flag: '🌐' },
+  pt: { label: 'Português', flag: '🌐' },
+  de: { label: 'Deutsch', flag: '🌐' },
+  ja: { label: '日本語', flag: '🌐' },
+  hi: { label: 'हिन्दी', flag: '🌐' },
+  tr: { label: 'Türkçe', flag: '🌐' },
+};
+
+const T: Record<string, Record<string, string>> = {
+  welcome_back: {
+    en: '🛡️ *Welcome back, @{u}!*\n\nSecure crypto escrow for P2P trades.\n\nChoose an action:',
+    zh: '🛡️ *欢迎回来,@{u}!*\n\n安全的加密货币P2P托管。\n\n请选择:',
+    ru: '🛡️ *С возвращением, @{u}!*\n\nБезопасный крипто-эскроу.\n\nВыберите:',
+    ko: '🛡️ *@{u} 님, 환영합니다!*\n\n안전한 P2P 에스크로.\n\n선택하세요:',
+    fr: '🛡️ *Bon retour, @{u}!*\n\nEscrow crypto sécurisé.\n\nChoisissez:',
+    es: '🛡️ *¡Bienvenido, @{u}!*\n\nEscrow cripto seguro.\n\nElige:',
+    ar: '🛡️ *مرحبًا بعودتك @{u}!*\n\nضمان آمن للعملات الرقمية.\n\nاختر:',
+    pt: '🛡️ *Bem-vindo de volta, @{u}!*\n\nEscrow cripto seguro.\n\nEscolha:',
+    de: '🛡️ *Willkommen zurück, @{u}!*\n\nSicherer Krypto-Escrow.\n\nWählen:',
+    ja: '🛡️ *おかえりなさい @{u}!*\n\n安全なP2Pエスクロー。',
+    hi: '🛡️ *वापस स्वागत है @{u}!*',
+    tr: '🛡️ *Tekrar hoş geldin @{u}!*',
+  },
+  main_menu: { en: '◀️ Main Menu', zh: '◀️ 主菜单', ru: '◀️ Меню', ko: '◀️ 메뉴', fr: '◀️ Menu', es: '◀️ Menú', ar: '◀️ القائمة', pt: '◀️ Menu', de: '◀️ Menü', ja: '◀️ メニュー', hi: '◀️ मेनू', tr: '◀️ Menü' },
+  new_escrow: { en: '🤝 New Escrow', zh: '🤝 新托管', ru: '🤝 Новая сделка', ko: '🤝 새 에스크로', fr: '🤝 Nouveau', es: '🤝 Nuevo', ar: '🤝 جديد', pt: '🤝 Novo', de: '🤝 Neu', ja: '🤝 新規', hi: '🤝 नया', tr: '🤝 Yeni' },
+  my_escrows: { en: '📋 My Escrows', zh: '📋 我的托管', ru: '📋 Мои сделки', ko: '📋 내 거래', fr: '📋 Mes', es: '📋 Míos', ar: '📋 ضماناتي', pt: '📋 Meus', de: '📋 Meine', ja: '📋 自分の', hi: '📋 मेरे', tr: '📋 Benim' },
+  wallets: { en: '💰 Wallets', zh: '💰 钱包', ru: '💰 Кошельки', ko: '💰 지갑', fr: '💰 Portefeuilles', es: '💰 Billeteras', ar: '💰 المحافظ', pt: '💰 Carteiras', de: '💰 Wallets', ja: '💰 ウォレット', hi: '💰 वॉलेट', tr: '💰 Cüzdan' },
+  status: { en: '👤 Status', zh: '👤 状态', ru: '👤 Профиль', ko: '👤 상태', fr: '👤 Statut', es: '👤 Estado', ar: '👤 الحالة', pt: '👤 Status', de: '👤 Status', ja: '👤 ステータス', hi: '👤 स्थिति', tr: '👤 Durum' },
+  balance_btn: { en: '📊 Balance', zh: '📊 余额', ru: '📊 Баланс', ko: '📊 잔액', fr: '📊 Solde', es: '📊 Saldo', ar: '📊 الرصيد', pt: '📊 Saldo', de: '📊 Saldo', ja: '📊 残高', hi: '📊 शेष', tr: '📊 Bakiye' },
+  deposit_btn: { en: '⬇️ Deposit', zh: '⬇️ 存入', ru: '⬇️ Депозит', ko: '⬇️ 입금', fr: '⬇️ Dépôt', es: '⬇️ Depósito', ar: '⬇️ إيداع', pt: '⬇️ Depósito', de: '⬇️ Einzahlen', ja: '⬇️ 入金', hi: '⬇️ जमा', tr: '⬇️ Yatır' },
+  withdraw_btn: { en: '⬆️ Withdraw', zh: '⬆️ 提现', ru: '⬆️ Вывод', ko: '⬆️ 출금', fr: '⬆️ Retrait', es: '⬆️ Retiro', ar: '⬆️ سحب', pt: '⬆️ Saque', de: '⬆️ Auszahlen', ja: '⬆️ 出金', hi: '⬆️ निकाल', tr: '⬆️ Çek' },
+  language_btn: { en: '🌐 Language', zh: '🌐 语言', ru: '🌐 Язык', ko: '🌐 언어', fr: '🌐 Langue', es: '🌐 Idioma', ar: '🌐 اللغة', pt: '🌐 Idioma', de: '🌐 Sprache', ja: '🌐 言語', hi: '🌐 भाषा', tr: '🌐 Dil' },
+  reset_pw: { en: '🔑 Reset Password', zh: '🔑 重置密码', ru: '🔑 Сброс пароля', ko: '🔑 비밀번호 재설정', fr: '🔑 Réinit. MdP', es: '🔑 Restablecer', ar: '🔑 إعادة تعيين', pt: '🔑 Redefinir', de: '🔑 Passwort', ja: '🔑 パスワード', hi: '🔑 पासवर्ड', tr: '🔑 Şifre' },
+  help_btn: { en: '❓ Help', zh: '❓ 帮助', ru: '❓ Помощь', ko: '❓ 도움말', fr: '❓ Aide', es: '❓ Ayuda', ar: '❓ مساعدة', pt: '❓ Ajuda', de: '❓ Hilfe', ja: '❓ ヘルプ', hi: '❓ मदद', tr: '❓ Yardım' },
+  pick_lang: { en: '🌐 *Pick your language*', zh: '🌐 *选择语言*', ru: '🌐 *Выберите язык*', ko: '🌐 *언어 선택*', fr: '🌐 *Choisir la langue*', es: '🌐 *Elige idioma*', ar: '🌐 *اختر اللغة*', pt: '🌐 *Escolha o idioma*', de: '🌐 *Sprache wählen*', ja: '🌐 *言語を選ぶ*', hi: '🌐 *भाषा चुनें*', tr: '🌐 *Dil seç*' },
+  lang_set: { en: '✅ Language set to {l}', zh: '✅ 语言已设置为 {l}', ru: '✅ Язык: {l}', ko: '✅ 언어: {l}', fr: '✅ Langue: {l}', es: '✅ Idioma: {l}', ar: '✅ اللغة: {l}', pt: '✅ Idioma: {l}', de: '✅ Sprache: {l}', ja: '✅ 言語: {l}', hi: '✅ भाषा: {l}', tr: '✅ Dil: {l}' },
+  payment_confirmed_buyer: {
+    en: '✅ *Payment confirmed* for *{title}* — {amount} {crypto}.\nThe seller has been notified to release the goods.',
+    zh: '✅ *{title}* 的付款已确认 — {amount} {crypto}。卖家已收到通知。',
+    ru: '✅ Платёж по *{title}* подтверждён — {amount} {crypto}.',
+    es: '✅ Pago confirmado para *{title}* — {amount} {crypto}.',
+    fr: '✅ Paiement confirmé pour *{title}* — {amount} {crypto}.',
+    pt: '✅ Pagamento confirmado para *{title}* — {amount} {crypto}.',
+    ar: '✅ تم تأكيد دفع *{title}* — {amount} {crypto}.',
+    ko: '✅ *{title}* 결제 확인 — {amount} {crypto}.',
+    de: '✅ Zahlung bestätigt für *{title}* — {amount} {crypto}.',
+    ja: '✅ 支払い確認: *{title}* — {amount} {crypto}.',
+    hi: '✅ भुगतान पुष्ट: *{title}* — {amount} {crypto}.',
+    tr: '✅ Ödeme onaylandı: *{title}* — {amount} {crypto}.',
+  },
+  payment_confirmed_seller: {
+    en: '✅ Buyer\'s payment for *{title}* is now confirmed. You can release the goods/details.',
+    zh: '✅ 买家对 *{title}* 的付款已确认,你可以发货。',
+    ru: '✅ Платёж по *{title}* подтверждён. Можно отправлять товар.',
+  },
+  delivery_received: {
+    en: '📦 *Delivery details from seller* for *{title}*:\n\n{content}',
+    zh: '📦 *卖家交付内容* (*{title}*):\n\n{content}',
+    ru: '📦 *Данные от продавца* (*{title}*):\n\n{content}',
+    es: '📦 *Detalles del vendedor* (*{title}*):\n\n{content}',
+    fr: '📦 *Détails du vendeur* (*{title}*):\n\n{content}',
+    pt: '📦 *Detalhes do vendedor* (*{title}*):\n\n{content}',
+    ar: '📦 *تفاصيل التسليم من البائع* (*{title}*):\n\n{content}',
+    ko: '📦 *판매자 전달 내용* (*{title}*):\n\n{content}',
+    de: '📦 *Lieferdetails vom Verkäufer* (*{title}*):\n\n{content}',
+    ja: '📦 *売り手からの納品* (*{title}*):\n\n{content}',
+    hi: '📦 *विक्रेता विवरण* (*{title}*):\n\n{content}',
+    tr: '📦 *Satıcı teslim* (*{title}*):\n\n{content}',
+  },
+  funds_released_buyer: {
+    en: '🎉 Seller released funds for *{title}*. Trade complete!',
+    zh: '🎉 卖家已释放 *{title}* 的资金,交易完成!',
+    ru: '🎉 Продавец завершил *{title}*.',
+  },
+};
+
+function tr(key: string, lang: string, vars: Record<string, string | number> = {}): string {
+  const dict = T[key] || {};
+  let s = dict[lang] || dict.en || key;
+  for (const k of Object.keys(vars)) s = s.replaceAll(`{${k}}`, String(vars[k]));
+  return s;
+}
+
+async function getLang(profile: any): Promise<string> {
+  return profile?.language || 'en';
+}
+
 // ---------- helpers ----------
 
 async function getBotToken(): Promise<string | null> {
@@ -124,8 +219,9 @@ function mainMenuKeyboard() {
   return {
     inline_keyboard: [
       [{ text: '🤝 New Escrow', callback_data: 'start_escrow' }, { text: '📋 My Escrows', callback_data: 'my_escrows' }],
+      [{ text: '📊 Balance', callback_data: 'balance' }, { text: '⬇️ Deposit', callback_data: 'deposit' }, { text: '⬆️ Withdraw', callback_data: 'withdraw' }],
       [{ text: '💰 Wallets', callback_data: 'wallets' }, { text: '👤 Status', callback_data: 'status' }],
-      [{ text: '🔑 Reset Password', callback_data: 'reset_password' }, { text: '❓ Help', callback_data: 'help' }],
+      [{ text: '🌐 Language', callback_data: 'language' }, { text: '🔑 Reset Password', callback_data: 'reset_password' }, { text: '❓ Help', callback_data: 'help' }],
     ],
   };
 }
@@ -317,6 +413,39 @@ async function handleResetPassword(chatId: number, username: string, token: stri
 // ---------- conversation (persistent sessions) ----------
 
 async function handleConversation(chatId: number, text: string, username: string, token: string, state: SessionState) {
+  // Withdraw flow
+  if (state.step === 'awaiting_withdraw_amount') {
+    const amount = parseFloat(text);
+    if (isNaN(amount) || amount <= 0) {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Enter a valid amount.' });
+    }
+    await setSession(chatId, { step: 'awaiting_withdraw_address', data: { ...state.data, amount } }, username);
+    return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '📤 Paste the destination wallet address:' });
+  }
+  if (state.step === 'awaiting_withdraw_address') {
+    const address = text.trim();
+    if (address.length < 20) {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Invalid address.' });
+    }
+    const profile = await ensureProfile(chatId, username, token);
+    const network = state.data?.network;
+    const amount = state.data?.amount;
+    if (profile) {
+      await supabase.from('balance_ledger').insert({
+        user_id: profile.id, type: 'withdraw_request',
+        crypto_type: network, amount: -Math.abs(amount),
+        note: `Bot withdraw to ${address}`, created_by: profile.id,
+      } as any);
+    }
+    await clearSession(chatId);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: `✅ *Withdraw request submitted*\n\nNetwork: ${network}\nAmount: ${amount}\nTo: \`${address}\`\n\nAdmin will process shortly.`,
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    });
+  }
+
   // Account creation flow
   if (state.step === 'awaiting_email') {
     const email = text.trim().toLowerCase();
@@ -616,6 +745,81 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
 // ---------- callbacks ----------
 
 async function handleCallback(query: any, token: string) {
+  return handleCallbackImpl(query, token);
+}
+
+async function handleBalance(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  const lang = await getLang(profile);
+  const { data: balances } = await supabase.from('user_balances').select('*').eq('user_id', profile.id);
+  let msg = `📊 *${tr('balance_btn', lang).replace(/^📊 /, '')}*\n\n`;
+  if (!balances?.length) msg += '_No balance yet._';
+  else for (const b of balances) {
+    msg += `• *${b.crypto_type}*: ${Number(b.balance).toFixed(6)}`;
+    if (Number(b.locked_balance) > 0) msg += ` _(locked: ${Number(b.locked_balance).toFixed(6)})_`;
+    msg += '\n';
+  }
+  // also show on-chain treasury wallets they connected
+  const { data: connected } = await supabase.from('connected_wallets').select('*').eq('user_id', profile.id);
+  if (connected?.length) {
+    msg += '\n*Connected wallets:*\n';
+    for (const w of connected) msg += `• ${w.network || 'EVM'}: \`${w.address}\`\n`;
+  }
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [
+      [{ text: '⬇️ Deposit', callback_data: 'deposit' }, { text: '⬆️ Withdraw', callback_data: 'withdraw' }],
+      [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+    ] },
+  });
+}
+
+async function handleDeposit(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
+  let msg = '⬇️ *Deposit Addresses*\n\nSend funds to any of these — admin will credit your balance after confirmation:\n\n';
+  if (!wallets?.length) msg += '_No deposit wallets configured. Contact admin._';
+  else for (const w of wallets) msg += `*${w.crypto_name}* (${w.network})\n\`${w.wallet_address}\`\n\n`;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+  });
+}
+
+async function handleWithdraw(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId,
+    text: '⬆️ *Withdraw*\n\nSelect network:',
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [
+      [{ text: 'TRC20 (USDT)', callback_data: 'withdraw_chain_TRC20' }, { text: 'ERC20 (USDT/ETH)', callback_data: 'withdraw_chain_ERC20' }],
+      [{ text: 'BTC', callback_data: 'withdraw_chain_BTC' }, { text: 'BEP20', callback_data: 'withdraw_chain_BEP20' }],
+      [{ text: 'Polygon', callback_data: 'withdraw_chain_POLYGON' }, { text: 'Solana', callback_data: 'withdraw_chain_SOL' }],
+      [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+    ] },
+  });
+}
+
+async function handleLanguagePicker(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  const lang = profile?.language || 'en';
+  const codes = Object.keys(LANGS);
+  const rows: any[] = [];
+  for (let i = 0; i < codes.length; i += 2) {
+    rows.push(codes.slice(i, i + 2).map((c) => ({ text: `🌐 ${LANGS[c].label}`, callback_data: `setlang_${c}` })));
+  }
+  rows.push([{ text: '◀️ Main Menu', callback_data: 'back_main' }]);
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: tr('pick_lang', lang), parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
+async function handleCallbackImpl(query: any, token: string) {
   const chatId = query.message.chat.id;
   const data = query.data;
   const username = query.from?.username || '';
@@ -682,6 +886,9 @@ async function handleCallback(query: any, token: string) {
       await supabase.from('payments').insert({
         escrow_id: escrowId, crypto_type: escrow.crypto_type,
         wallet_address: matching[0].wallet_address, amount: escrow.amount, status: 'submitted',
+        payer_id: profile.id,
+        payer_username: profile.telegram_username || username,
+        paid_at: new Date().toISOString(),
       });
       await supabase.from('escrows').update({ status: 'paid' }).eq('id', escrowId);
       await supabase.from('escrow_messages').insert({
@@ -715,6 +922,18 @@ async function handleCallback(query: any, token: string) {
         message: '🎉 Seller has released funds. Trade complete!',
         message_type: 'system', message_label: 'Moderator',
       });
+    }
+    // Notify buyer
+    const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+    if (esc?.buyer_id) {
+      const { data: bp } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+      if (bp?.telegram_chat_id) {
+        await sendTelegram(token, 'sendMessage', {
+          chat_id: parseInt(bp.telegram_chat_id),
+          text: tr('funds_released_buyer', bp.language || 'en', { title: esc.title }),
+          parse_mode: 'Markdown',
+        });
+      }
     }
     // Prompt seller to submit receive wallet so admin can sweep payout
     await setSession(chatId, { step: 'awaiting_payout_chain', data: { escrowId } }, username);
@@ -787,6 +1006,31 @@ async function handleCallback(query: any, token: string) {
     case 'help': return handleHelp(chatId, token);
     case 'reset_password': return handleResetPassword(chatId, username, token);
     case 'back_main': return handleStart(chatId, username, token);
+    case 'balance': return handleBalance(chatId, username, token);
+    case 'deposit': return handleDeposit(chatId, username, token);
+    case 'withdraw': return handleWithdraw(chatId, username, token);
+    case 'language': return handleLanguagePicker(chatId, username, token);
+  }
+
+  if (data.startsWith('setlang_')) {
+    const newLang = data.replace('setlang_', '');
+    const profile = await ensureProfile(chatId, username, token);
+    if (!profile) return;
+    await supabase.from('profiles').update({ language: newLang }).eq('id', profile.id);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: tr('lang_set', newLang, { l: LANGS[newLang]?.label || newLang }),
+      parse_mode: 'Markdown',
+      reply_markup: mainMenuKeyboard(),
+    });
+  }
+
+  if (data.startsWith('withdraw_chain_')) {
+    const network = data.replace('withdraw_chain_', '');
+    await setSession(chatId, { step: 'awaiting_withdraw_amount', data: { network } }, username);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: `Enter the *amount* to withdraw on ${network}:`, parse_mode: 'Markdown',
+    });
   }
 }
 
@@ -832,6 +1076,20 @@ Deno.serve(async (req) => {
                     message: `📦 *Delivery Details*\n\n${content}`,
                     message_type: 'release', message_label: 'Seller Delivery',
                   });
+                  // Notify buyer in the bot
+                  const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+                  if (esc?.buyer_id) {
+                    const { data: buyerProf } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+                    if (buyerProf?.telegram_chat_id) {
+                      const blang = buyerProf.language || 'en';
+                      await sendTelegram(token, 'sendMessage', {
+                        chat_id: parseInt(buyerProf.telegram_chat_id),
+                        text: tr('delivery_received', blang, { title: esc.title, content }),
+                        parse_mode: 'Markdown',
+                        reply_markup: { inline_keyboard: [[{ text: '👁 View Escrow', callback_data: `escrow_${escrowId}` }]] },
+                      });
+                    }
+                  }
                   await clearSession(cid);
                   await sendTelegram(token, 'sendMessage', {
                     chat_id: cid,
@@ -850,15 +1108,23 @@ Deno.serve(async (req) => {
                   const escrowId = session.data?.escrowId;
                   const reason = (msg.text || '').trim();
                   await supabase.from('disputes').insert({ escrow_id: escrowId, raised_by: profile.id, reason });
-                  await supabase.from('escrows').update({ status: 'disputed' }).eq('id', escrowId);
+                  // Assign first available moderator
+                  const { data: modRole } = await supabase.from('user_roles').select('user_id').in('role', ['moderator', 'admin']).limit(1).single();
+                  const moderatorId = modRole?.user_id || null;
+                  let modUsername = 'Moderator';
+                  if (moderatorId) {
+                    const { data: modProf } = await supabase.from('profiles').select('telegram_username,display_name').eq('id', moderatorId).single();
+                    modUsername = modProf?.telegram_username ? `@${modProf.telegram_username}` : (modProf?.display_name || 'Moderator');
+                  }
+                  await supabase.from('escrows').update({ status: 'disputed', moderator_id: moderatorId }).eq('id', escrowId);
                   await supabase.from('escrow_messages').insert({
                     escrow_id: escrowId, sender_id: profile.id,
-                    message: '🛡️ Moderator has joined the chat. A dispute has been raised and will be reviewed.',
+                    message: `🛡️ ${modUsername} has joined the chat. A dispute has been raised and will be reviewed.`,
                     message_type: 'system', message_label: 'Moderator',
                   });
                   await clearSession(cid);
                   await sendTelegram(token, 'sendMessage', {
-                    chat_id: cid, text: '⚠️ Dispute raised! A moderator will review shortly.',
+                    chat_id: cid, text: `⚠️ Dispute raised! ${modUsername} will review shortly.`,
                     reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
                   });
                   return;
@@ -897,6 +1163,45 @@ Deno.serve(async (req) => {
       if (action === 'send_notification') {
         const result = await sendTelegram(token, 'sendMessage', { chat_id: body.chat_id, text: body.text, parse_mode: 'Markdown' });
         return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      if (action === 'notify_payment_confirmed') {
+        const escrowId = body.escrow_id;
+        const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+        if (esc) {
+          const notify = async (uid: string | null, key: 'payment_confirmed_buyer' | 'payment_confirmed_seller') => {
+            if (!uid) return;
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', uid).single();
+            if (!p?.telegram_chat_id) return;
+            const lng = p.language || 'en';
+            await sendTelegram(token, 'sendMessage', {
+              chat_id: parseInt(p.telegram_chat_id),
+              text: tr(key, lng, { title: esc.title, amount: esc.amount, crypto: esc.crypto_type }),
+              parse_mode: 'Markdown',
+              reply_markup: { inline_keyboard: [[{ text: '👁 View Escrow', callback_data: `escrow_${escrowId}` }]] },
+            });
+          };
+          await notify(esc.buyer_id, 'payment_confirmed_buyer');
+          await notify(esc.seller_id, 'payment_confirmed_seller');
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      if (action === 'notify_funds_released') {
+        const escrowId = body.escrow_id;
+        const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+        if (esc?.buyer_id) {
+          const { data: p } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+          if (p?.telegram_chat_id) {
+            const lng = p.language || 'en';
+            await sendTelegram(token, 'sendMessage', {
+              chat_id: parseInt(p.telegram_chat_id),
+              text: tr('funds_released_buyer', lng, { title: esc.title }),
+              parse_mode: 'Markdown',
+            });
+          }
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       if (action === 'set_commands') {
