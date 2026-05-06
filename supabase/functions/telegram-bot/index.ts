@@ -1150,6 +1150,45 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      if (action === 'notify_payment_confirmed') {
+        const escrowId = body.escrow_id;
+        const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+        if (esc) {
+          const notify = async (uid: string | null, key: 'payment_confirmed_buyer' | 'payment_confirmed_seller') => {
+            if (!uid) return;
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', uid).single();
+            if (!p?.telegram_chat_id) return;
+            const lng = p.language || 'en';
+            await sendTelegram(token, 'sendMessage', {
+              chat_id: parseInt(p.telegram_chat_id),
+              text: tr(key, lng, { title: esc.title, amount: esc.amount, crypto: esc.crypto_type }),
+              parse_mode: 'Markdown',
+              reply_markup: { inline_keyboard: [[{ text: '👁 View Escrow', callback_data: `escrow_${escrowId}` }]] },
+            });
+          };
+          await notify(esc.buyer_id, 'payment_confirmed_buyer');
+          await notify(esc.seller_id, 'payment_confirmed_seller');
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      if (action === 'notify_funds_released') {
+        const escrowId = body.escrow_id;
+        const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+        if (esc?.buyer_id) {
+          const { data: p } = await supabase.from('profiles').select('*').eq('id', esc.buyer_id).single();
+          if (p?.telegram_chat_id) {
+            const lng = p.language || 'en';
+            await sendTelegram(token, 'sendMessage', {
+              chat_id: parseInt(p.telegram_chat_id),
+              text: tr('funds_released_buyer', lng, { title: esc.title }),
+              parse_mode: 'Markdown',
+            });
+          }
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       if (action === 'set_commands') {
         const result = await sendTelegram(token, 'setMyCommands', {
           commands: [
