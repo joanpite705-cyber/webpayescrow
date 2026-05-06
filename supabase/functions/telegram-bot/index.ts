@@ -886,6 +886,9 @@ async function handleCallbackImpl(query: any, token: string) {
       await supabase.from('payments').insert({
         escrow_id: escrowId, crypto_type: escrow.crypto_type,
         wallet_address: matching[0].wallet_address, amount: escrow.amount, status: 'submitted',
+        payer_id: profile.id,
+        payer_username: profile.telegram_username || username,
+        paid_at: new Date().toISOString(),
       });
       await supabase.from('escrows').update({ status: 'paid' }).eq('id', escrowId);
       await supabase.from('escrow_messages').insert({
