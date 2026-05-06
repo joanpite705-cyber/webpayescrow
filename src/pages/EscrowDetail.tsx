@@ -188,18 +188,37 @@ export default function EscrowDetail() {
     if (!escrow) return;
     const { error } = await supabase.from("escrows").update({ status: "completed" as const }).eq("id", escrow.id);
     if (error) toast.error(error.message);
-    else { toast.success("Funds released! Trade complete."); fetchData(); }
+    else {
+      try { await supabase.functions.invoke("telegram-bot", { body: { action: "notify_funds_released", escrow_id: escrow.id } }); } catch {}
+      toast.success("Funds released! Trade complete."); fetchData();
+    }
   };
 
   const shareReleaseDetails = async () => {
     if (!releaseDetails.trim() || !user) return;
+    const content = releaseDetails.trim();
     const { error } = await supabase.from("escrow_messages").insert({
       escrow_id: id!,
       sender_id: user.id,
-      message: `📦 Seller delivery details\n\n${releaseDetails.trim()}`,
+      message: `📦 *Delivery Details*\n\n${content}`,
+      message_type: "release", message_label: "Seller Delivery",
     });
     if (error) toast.error(error.message);
     else {
+      // Persist as a release record so buyer sees it & notify in Telegram
+      await supabase.from("escrow_releases").insert({
+        escrow_id: id!, sender_id: user.id, release_type: "text", content, title: "Delivery Details",
+      });
+      try {
+        const { data: buyer } = await supabase.from("profiles").select("telegram_chat_id, language").eq("id", escrow.buyer_id).maybeSingle();
+        if (buyer?.telegram_chat_id) {
+          await supabase.functions.invoke("telegram-bot", { body: {
+            action: "send_notification",
+            chat_id: parseInt(buyer.telegram_chat_id),
+            text: `📦 *Delivery details from seller* for *${escrow.title}*:\n\n${content}`,
+          }});
+        }
+      } catch {}
       toast.success("Release details shared");
       setReleaseDetails("");
     }
