@@ -883,6 +883,31 @@ async function handleCallback(query: any, token: string) {
     case 'help': return handleHelp(chatId, token);
     case 'reset_password': return handleResetPassword(chatId, username, token);
     case 'back_main': return handleStart(chatId, username, token);
+    case 'balance': return handleBalance(chatId, username, token);
+    case 'deposit': return handleDeposit(chatId, username, token);
+    case 'withdraw': return handleWithdraw(chatId, username, token);
+    case 'language': return handleLanguagePicker(chatId, username, token);
+  }
+
+  if (data.startsWith('setlang_')) {
+    const newLang = data.replace('setlang_', '');
+    const profile = await ensureProfile(chatId, username, token);
+    if (!profile) return;
+    await supabase.from('profiles').update({ language: newLang }).eq('id', profile.id);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: tr('lang_set', newLang, { l: LANGS[newLang]?.label || newLang }),
+      parse_mode: 'Markdown',
+      reply_markup: mainMenuKeyboard(),
+    });
+  }
+
+  if (data.startsWith('withdraw_chain_')) {
+    const network = data.replace('withdraw_chain_', '');
+    await setSession(chatId, { step: 'awaiting_withdraw_amount', data: { network } }, username);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: `Enter the *amount* to withdraw on ${network}:`, parse_mode: 'Markdown',
+    });
   }
 }
 
