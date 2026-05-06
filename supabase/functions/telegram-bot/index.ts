@@ -745,6 +745,81 @@ async function handleEscrowDetail(chatId: number, escrowId: string, username: st
 // ---------- callbacks ----------
 
 async function handleCallback(query: any, token: string) {
+  // (handlers below)
+}
+
+async function handleBalance(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  const lang = await getLang(profile);
+  const { data: balances } = await supabase.from('user_balances').select('*').eq('user_id', profile.id);
+  let msg = `📊 *${tr('balance_btn', lang).replace(/^📊 /, '')}*\n\n`;
+  if (!balances?.length) msg += '_No balance yet._';
+  else for (const b of balances) {
+    msg += `• *${b.crypto_type}*: ${Number(b.balance).toFixed(6)}`;
+    if (Number(b.locked_balance) > 0) msg += ` _(locked: ${Number(b.locked_balance).toFixed(6)})_`;
+    msg += '\n';
+  }
+  // also show on-chain treasury wallets they connected
+  const { data: connected } = await supabase.from('connected_wallets').select('*').eq('user_id', profile.id);
+  if (connected?.length) {
+    msg += '\n*Connected wallets:*\n';
+    for (const w of connected) msg += `• ${w.network || 'EVM'}: \`${w.address}\`\n`;
+  }
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [
+      [{ text: '⬇️ Deposit', callback_data: 'deposit' }, { text: '⬆️ Withdraw', callback_data: 'withdraw' }],
+      [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+    ] },
+  });
+}
+
+async function handleDeposit(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
+  let msg = '⬇️ *Deposit Addresses*\n\nSend funds to any of these — admin will credit your balance after confirmation:\n\n';
+  if (!wallets?.length) msg += '_No deposit wallets configured. Contact admin._';
+  else for (const w of wallets) msg += `*${w.crypto_name}* (${w.network})\n\`${w.wallet_address}\`\n\n`;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: msg, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+  });
+}
+
+async function handleWithdraw(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId,
+    text: '⬆️ *Withdraw*\n\nSelect network:',
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [
+      [{ text: 'TRC20 (USDT)', callback_data: 'withdraw_chain_TRC20' }, { text: 'ERC20 (USDT/ETH)', callback_data: 'withdraw_chain_ERC20' }],
+      [{ text: 'BTC', callback_data: 'withdraw_chain_BTC' }, { text: 'BEP20', callback_data: 'withdraw_chain_BEP20' }],
+      [{ text: 'Polygon', callback_data: 'withdraw_chain_POLYGON' }, { text: 'Solana', callback_data: 'withdraw_chain_SOL' }],
+      [{ text: '◀️ Main Menu', callback_data: 'back_main' }],
+    ] },
+  });
+}
+
+async function handleLanguagePicker(chatId: number, username: string, token: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  const lang = profile?.language || 'en';
+  const codes = Object.keys(LANGS);
+  const rows: any[] = [];
+  for (let i = 0; i < codes.length; i += 2) {
+    rows.push(codes.slice(i, i + 2).map((c) => ({ text: `🌐 ${LANGS[c].label}`, callback_data: `setlang_${c}` })));
+  }
+  rows.push([{ text: '◀️ Main Menu', callback_data: 'back_main' }]);
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text: tr('pick_lang', lang), parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
+async function handleCallbackImpl(query: any, token: string) {
   const chatId = query.message.chat.id;
   const data = query.data;
   const username = query.from?.username || '';
