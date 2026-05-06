@@ -413,6 +413,39 @@ async function handleResetPassword(chatId: number, username: string, token: stri
 // ---------- conversation (persistent sessions) ----------
 
 async function handleConversation(chatId: number, text: string, username: string, token: string, state: SessionState) {
+  // Withdraw flow
+  if (state.step === 'awaiting_withdraw_amount') {
+    const amount = parseFloat(text);
+    if (isNaN(amount) || amount <= 0) {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Enter a valid amount.' });
+    }
+    await setSession(chatId, { step: 'awaiting_withdraw_address', data: { ...state.data, amount } }, username);
+    return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '📤 Paste the destination wallet address:' });
+  }
+  if (state.step === 'awaiting_withdraw_address') {
+    const address = text.trim();
+    if (address.length < 20) {
+      return sendTelegram(token, 'sendMessage', { chat_id: chatId, text: '❌ Invalid address.' });
+    }
+    const profile = await ensureProfile(chatId, username, token);
+    const network = state.data?.network;
+    const amount = state.data?.amount;
+    if (profile) {
+      await supabase.from('balance_ledger').insert({
+        user_id: profile.id, type: 'withdraw_request',
+        crypto_type: network, amount: -Math.abs(amount),
+        note: `Bot withdraw to ${address}`, created_by: profile.id,
+      } as any);
+    }
+    await clearSession(chatId);
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId,
+      text: `✅ *Withdraw request submitted*\n\nNetwork: ${network}\nAmount: ${amount}\nTo: \`${address}\`\n\nAdmin will process shortly.`,
+      parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    });
+  }
+
   // Account creation flow
   if (state.step === 'awaiting_email') {
     const email = text.trim().toLowerCase();
