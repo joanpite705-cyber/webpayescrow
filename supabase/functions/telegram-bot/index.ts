@@ -91,6 +91,25 @@ const T: Record<string, Record<string, string>> = {
     zh: '🎉 卖家已释放 *{title}* 的资金,交易完成!',
     ru: '🎉 Продавец завершил *{title}*.',
   },
+  payment_rejected_buyer: {
+    en: '❌ *Payment NOT received* for *{title}*.\n\nYour submitted payment could not be verified by the moderator. Please double-check the destination address, network, and amount — then resubmit from the escrow page.',
+    zh: '❌ *{title}* 的付款未收到。请核对地址、网络和金额后重新提交。',
+    ru: '❌ Платёж по *{title}* не получен. Проверьте адрес/сеть/сумму и отправьте снова.',
+    es: '❌ Pago NO recibido para *{title}*. Verifica dirección, red y cantidad e inténtalo de nuevo.',
+    fr: '❌ Paiement NON reçu pour *{title}*. Vérifiez l\'adresse, le réseau et le montant.',
+    pt: '❌ Pagamento NÃO recebido para *{title}*.',
+    ar: '❌ لم يتم استلام الدفع لـ *{title}*.',
+    ko: '❌ *{title}* 결제 미수신. 주소/네트워크/금액을 확인하세요.',
+    de: '❌ Zahlung für *{title}* nicht erhalten.',
+    ja: '❌ *{title}* の支払いが未受領です。',
+    hi: '❌ *{title}* के लिए भुगतान प्राप्त नहीं हुआ।',
+    tr: '❌ *{title}* için ödeme alınmadı.',
+  },
+  payment_rejected_seller: {
+    en: 'ℹ️ Buyer\'s payment for *{title}* was *not verified*. Trade is back to active — wait for them to resubmit.',
+    zh: 'ℹ️ *{title}* 的买家付款未通过验证,交易已恢复活动状态。',
+    ru: 'ℹ️ Платёж по *{title}* не подтверждён. Сделка снова активна.',
+  },
 };
 
 function tr(key: string, lang: string, vars: Record<string, string | number> = {}): string {
