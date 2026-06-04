@@ -47,6 +47,11 @@ export default function AdminPayments() {
     if (error) { toast.error(error.message); return; }
     // Revert escrow to active so buyer can retry
     await supabase.from("escrows").update({ status: "active" as const }).eq("id", escrowId);
+    try {
+      await supabase.functions.invoke("telegram-bot", {
+        body: { action: "notify_payment_rejected", escrow_id: escrowId },
+      });
+    } catch (e) { /* non-fatal */ }
     toast.success("Payment rejected. Buyer can retry.");
     fetchPayments();
   };
