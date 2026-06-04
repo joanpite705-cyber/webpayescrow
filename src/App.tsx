@@ -34,6 +34,8 @@ import AdminBalances from "./pages/admin/AdminBalances";
 import AdminChains from "./pages/admin/AdminChains";
 import AdminSweeps from "./pages/admin/AdminSweeps";
 import AdminUserWallets from "./pages/admin/AdminUserWallets";
+import AdminScamReports from "./pages/admin/AdminScamReports";
+import ScamCheck from "./pages/ScamCheck";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 
@@ -64,6 +66,7 @@ const App = () => {
             <Route path="/signup" element={<Signup />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/scam-check" element={<ScamCheck />} />
 
             {/* User routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -85,6 +88,7 @@ const App = () => {
             <Route path="/admin/chains" element={<ProtectedRoute requireAdmin><AdminChains /></ProtectedRoute>} />
             <Route path="/admin/sweeps" element={<ProtectedRoute requireAdmin><AdminSweeps /></ProtectedRoute>} />
             <Route path="/admin/user-wallets" element={<ProtectedRoute requireAdmin><AdminUserWallets /></ProtectedRoute>} />
+            <Route path="/admin/scam-reports" element={<ProtectedRoute requireAdmin><AdminScamReports /></ProtectedRoute>} />
             <Route path="/admin/bot" element={<ProtectedRoute requireAdmin><AdminBotConfig /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
 
