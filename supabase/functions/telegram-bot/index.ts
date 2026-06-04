@@ -1108,6 +1108,13 @@ async function handleCallbackImpl(query: any, token: string) {
       chat_id: chatId, text: `Enter the *amount* to withdraw on ${network}:`, parse_mode: 'Markdown',
     });
   }
+
+  if (data.startsWith('deposit_w_')) {
+    return handleDepositPick(chatId, username, token, data.replace('deposit_w_', ''));
+  }
+  if (data.startsWith('deposit_sent_')) {
+    return handleDepositSent(chatId, username, token, data.replace('deposit_sent_', ''));
+  }
 }
 
 // ---------- server ----------
