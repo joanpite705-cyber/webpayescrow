@@ -830,13 +830,16 @@ async function handleDepositPick(chatId: number, username: string, token: string
   const expiresMin = 60;
   await supabase.from('balance_ledger').insert({
     user_id: profile.id,
-    direction: 'deposit',
-    status: 'pending',
-    network: w.network,
     crypto_type: w.crypto_name,
-    address: w.wallet_address,
     amount: 0,
-    notes: `Deposit intent from Telegram • expires in ${expiresMin}m`,
+    type: 'deposit_intent',
+    note: JSON.stringify({
+      source: 'telegram',
+      status: 'pending',
+      network: w.network,
+      address: w.wallet_address,
+      expires_at: new Date(Date.now() + expiresMin * 60_000).toISOString(),
+    }),
   } as any);
   const text =
     `⬇️ *Deposit ${w.crypto_name} (${w.network})*\n\n` +
