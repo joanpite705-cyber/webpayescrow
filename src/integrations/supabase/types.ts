@@ -656,6 +656,60 @@ export type Database = {
         }
         Relationships: []
       }
+      scam_reports: {
+        Row: {
+          admin_notes: string | null
+          amount_lost: number | null
+          created_at: string
+          crypto_type: string | null
+          description: string
+          evidence_url: string | null
+          handle: string
+          id: string
+          platform: string
+          reporter_email: string | null
+          reporter_name: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_lost?: number | null
+          created_at?: string
+          crypto_type?: string | null
+          description: string
+          evidence_url?: string | null
+          handle: string
+          id?: string
+          platform: string
+          reporter_email?: string | null
+          reporter_name?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_lost?: number | null
+          created_at?: string
+          crypto_type?: string | null
+          description?: string
+          evidence_url?: string | null
+          handle?: string
+          id?: string
+          platform?: string
+          reporter_email?: string | null
+          reporter_name?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       sweep_jobs: {
         Row: {
           amount: number | null
@@ -840,6 +894,20 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_moderator: { Args: never; Returns: boolean }
       is_escrow_party: { Args: { _escrow_id: string }; Returns: boolean }
+      search_scam_reports: {
+        Args: { _handle: string }
+        Returns: {
+          amount_lost: number
+          created_at: string
+          crypto_type: string
+          description: string
+          evidence_url: string
+          handle: string
+          id: string
+          platform: string
+          verified_at: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
