@@ -798,12 +798,69 @@ async function handleDeposit(chatId: number, username: string, token: string) {
   const profile = await ensureProfile(chatId, username, token);
   if (!profile) return;
   const { data: wallets } = await supabase.from('crypto_wallets').select('*').eq('is_active', true);
-  let msg = '⬇️ *Deposit Addresses*\n\nSend funds to any of these — admin will credit your balance after confirmation:\n\n';
-  if (!wallets?.length) msg += '_No deposit wallets configured. Contact admin._';
-  else for (const w of wallets) msg += `*${w.crypto_name}* (${w.network})\n\`${w.wallet_address}\`\n\n`;
+  if (!wallets?.length) {
+    return sendTelegram(token, 'sendMessage', {
+      chat_id: chatId, text: '⬇️ *Deposit*\n\n_No deposit wallets configured. Contact admin._', parse_mode: 'Markdown',
+      reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    });
+  }
+  const rows: any[] = [];
+  for (let i = 0; i < wallets.length; i += 2) {
+    const row = wallets.slice(i, i + 2).map((w: any) => ({
+      text: `${w.crypto_name} • ${w.network}`,
+      callback_data: `deposit_w_${w.id}`,
+    }));
+    rows.push(row);
+  }
+  rows.push([{ text: '◀️ Main Menu', callback_data: 'back_main' }]);
   await sendTelegram(token, 'sendMessage', {
-    chat_id: chatId, text: msg, parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: [[{ text: '◀️ Main Menu', callback_data: 'back_main' }]] },
+    chat_id: chatId,
+    text: '⬇️ *Deposit*\n\nPick a network. We will show the address and start watching for incoming funds — *no TXID needed*.',
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: rows },
+  });
+}
+
+async function handleDepositPick(chatId: number, username: string, token: string, walletId: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  const { data: w } = await supabase.from('crypto_wallets').select('*').eq('id', walletId).single();
+  if (!w) return;
+  // Log a pending deposit intent so admin sees it and can scan within the time window
+  const expiresMin = 60;
+  await supabase.from('balance_ledger').insert({
+    user_id: profile.id,
+    direction: 'deposit',
+    status: 'pending',
+    network: w.network,
+    crypto_type: w.crypto_name,
+    address: w.wallet_address,
+    amount: 0,
+    notes: `Deposit intent from Telegram • expires in ${expiresMin}m`,
+  } as any);
+  const text =
+    `⬇️ *Deposit ${w.crypto_name} (${w.network})*\n\n` +
+    `Send to this address:\n\`${w.wallet_address}\`\n\n` +
+    `⏱ Watch window: *${expiresMin} minutes*\n` +
+    `✅ No TXID needed — we'll credit your balance after on-chain confirmation.\n\n` +
+    `_Send only ${w.crypto_name} on ${w.network}. Wrong network = lost funds._`;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId, text, parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [
+      [{ text: '✅ I have sent it', callback_data: `deposit_sent_${w.id}` }],
+      [{ text: '◀️ Back', callback_data: 'deposit' }, { text: '🏠 Menu', callback_data: 'back_main' }],
+    ] },
+  });
+}
+
+async function handleDepositSent(chatId: number, username: string, token: string, walletId: string) {
+  const profile = await ensureProfile(chatId, username, token);
+  if (!profile) return;
+  await sendTelegram(token, 'sendMessage', {
+    chat_id: chatId,
+    text: '👀 *Watching the address now…*\n\nYou will be notified the moment the deposit is confirmed on-chain. You can close this chat — we will ping you here.',
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [[{ text: '🏠 Menu', callback_data: 'back_main' }]] },
   });
 }
 
