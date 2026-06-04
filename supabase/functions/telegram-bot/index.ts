@@ -1223,6 +1223,28 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      if (action === 'notify_payment_rejected') {
+        const escrowId = body.escrow_id;
+        const { data: esc } = await supabase.from('escrows').select('*').eq('id', escrowId).single();
+        if (esc) {
+          const notify = async (uid: string | null, key: 'payment_rejected_buyer' | 'payment_rejected_seller') => {
+            if (!uid) return;
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', uid).single();
+            if (!p?.telegram_chat_id) return;
+            const lng = p.language || 'en';
+            await sendTelegram(token, 'sendMessage', {
+              chat_id: parseInt(p.telegram_chat_id),
+              text: tr(key, lng, { title: esc.title }),
+              parse_mode: 'Markdown',
+              reply_markup: { inline_keyboard: [[{ text: '👁 View Escrow', callback_data: `escrow_${escrowId}` }]] },
+            });
+          };
+          await notify(esc.buyer_id, 'payment_rejected_buyer');
+          await notify(esc.seller_id, 'payment_rejected_seller');
+        }
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       if (action === 'set_commands') {
         const result = await sendTelegram(token, 'setMyCommands', {
           commands: [
