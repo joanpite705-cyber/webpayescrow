@@ -46,6 +46,7 @@ const translations: Record<string, Record<string, string>> = {
     delivery_details: "Delivery Details", release_section: "Release & Delivery",
     funds_available: "Funds Available", balances: "Balances",
     user_wallets: "User Wallets", chains: "Chains", sweeps: "Sweeps",
+    scam_reports: "Scam Reports",
   },
   zh: {
     dashboard: "仪表板", my_escrows: "我的托管", disputes: "争议", settings: "设置",

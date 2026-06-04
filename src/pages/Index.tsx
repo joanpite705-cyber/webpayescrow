@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Shield, ArrowRight, Lock, Users, Zap, MessageSquare } from "lucide-react";
+import { Shield, ArrowRight, Lock, Users, Zap, MessageSquare, AlertTriangle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,6 +78,28 @@ export default function Index() {
               <MessageSquare className="h-4 w-4" /> Open Telegram Bot
             </Button>
           )}
+          <Link to="/scam-check">
+            <Button size="lg" variant="outline" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto border-destructive/40 text-destructive hover:bg-destructive/10">
+              <AlertTriangle className="h-4 w-4" /> Scam Check
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      <section className="container py-10 md:py-16 px-4">
+        <div className="glass-card border-destructive/30 bg-gradient-to-br from-destructive/5 to-warning/5 p-6 md:p-10 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium mb-4">
+            <AlertTriangle className="h-3.5 w-3.5" /> Community Protection
+          </div>
+          <h2 className="text-2xl md:text-4xl font-bold mb-3">Check Before You Trade</h2>
+          <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-6">
+            Search any Telegram, WhatsApp, Instagram, X, Snapchat, Viber, Signal, Discord handle, email, or phone number across our community-verified scam database.
+          </p>
+          <Link to="/scam-check">
+            <Button size="lg" className="gap-2">
+              <Search className="h-4 w-4" /> Search Scam Database
+            </Button>
+          </Link>
         </div>
       </section>
 
