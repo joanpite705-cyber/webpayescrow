@@ -83,6 +83,11 @@ export default function Index() {
               <AlertTriangle className="h-4 w-4" /> Scam Check
             </Button>
           </Link>
+          <Link to="/marketplace">
+            <Button size="lg" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
+              Browse Accounts Market
+            </Button>
+          </Link>
         </div>
       </section>
 
