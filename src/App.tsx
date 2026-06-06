@@ -36,6 +36,10 @@ import AdminSweeps from "./pages/admin/AdminSweeps";
 import AdminUserWallets from "./pages/admin/AdminUserWallets";
 import AdminScamReports from "./pages/admin/AdminScamReports";
 import ScamCheck from "./pages/ScamCheck";
+import Marketplace from "./pages/Marketplace";
+import ListingDetail from "./pages/ListingDetail";
+import SellerHub from "./pages/SellerHub";
+import MyPurchases from "./pages/MyPurchases";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 
@@ -67,6 +71,8 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/scam-check" element={<ScamCheck />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/marketplace/:id" element={<ListingDetail />} />
 
             {/* User routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -76,6 +82,8 @@ const App = () => {
             <Route path="/dashboard/history" element={<ProtectedRoute><EscrowHistory /></ProtectedRoute>} />
             <Route path="/dashboard/disputes" element={<ProtectedRoute><UserDisputes /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
+            <Route path="/dashboard/seller" element={<ProtectedRoute><SellerHub /></ProtectedRoute>} />
+            <Route path="/dashboard/purchases" element={<ProtectedRoute><MyPurchases /></ProtectedRoute>} />
 
             {/* Admin routes */}
             <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />

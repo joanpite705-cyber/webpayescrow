@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders, Menu, X, History, Coins, Network, ArrowDownToLine, Flag } from "lucide-react";
+import { Shield, LayoutDashboard, HandCoins, MessageSquare, AlertTriangle, Settings, LogOut, Users, Wallet, Bot, ChevronRight, Sliders, Menu, X, History, Coins, Network, ArrowDownToLine, Flag, Store, ShoppingBag, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import WalletConnectButton from "@/components/WalletConnectButton";
@@ -10,6 +10,9 @@ import { t, useLanguage } from "@/lib/i18n";
 const userNav = [
   { to: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
   { to: "/dashboard/escrows", icon: HandCoins, labelKey: "my_escrows" },
+  { to: "/marketplace", icon: Store, labelKey: "marketplace" },
+  { to: "/dashboard/seller", icon: Package, labelKey: "sell_accounts" },
+  { to: "/dashboard/purchases", icon: ShoppingBag, labelKey: "my_purchases" },
   { to: "/dashboard/history", icon: History, labelKey: "escrow_history" },
   { to: "/dashboard/disputes", icon: AlertTriangle, labelKey: "disputes" },
   { to: "/dashboard/settings", icon: Settings, labelKey: "settings" },
