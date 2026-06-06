@@ -5,6 +5,7 @@ const LANGUAGE_EVENT = "app-language-change";
 const translations: Record<string, Record<string, string>> = {
   en: {
     dashboard: "Dashboard", my_escrows: "My Escrows", disputes: "Disputes", settings: "Settings",
+    marketplace: "Marketplace", sell_accounts: "Sell Accounts", my_purchases: "My Purchases",
     overview: "Overview", users: "Users", all_escrows: "All Escrows", payments: "Payments",
     crypto_wallets: "Crypto Wallets", bot_config: "Bot Config", platform: "Platform Settings",
     sign_out: "Sign Out", admin_panel: "Admin Panel", user_dashboard: "User Dashboard",
