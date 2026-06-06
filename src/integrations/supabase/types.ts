@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_listings: {
+        Row: {
+          auto_replace: boolean
+          category: string
+          chain_key: string | null
+          created_at: string
+          credential_template: string[]
+          crypto_type: string
+          delivery_type: string
+          description: string | null
+          features: Json
+          id: string
+          images: string[]
+          is_active: boolean
+          platform: string
+          price: number
+          seller_id: string
+          sold_count: number
+          stock_count: number
+          title: string
+          updated_at: string
+          warranty_hours: number
+        }
+        Insert: {
+          auto_replace?: boolean
+          category: string
+          chain_key?: string | null
+          created_at?: string
+          credential_template?: string[]
+          crypto_type?: string
+          delivery_type?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          platform: string
+          price: number
+          seller_id: string
+          sold_count?: number
+          stock_count?: number
+          title: string
+          updated_at?: string
+          warranty_hours?: number
+        }
+        Update: {
+          auto_replace?: boolean
+          category?: string
+          chain_key?: string | null
+          created_at?: string
+          credential_template?: string[]
+          crypto_type?: string
+          delivery_type?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          platform?: string
+          price?: number
+          seller_id?: string
+          sold_count?: number
+          stock_count?: number
+          title?: string
+          updated_at?: string
+          warranty_hours?: number
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           alchemy_api_key: string | null
@@ -528,6 +597,165 @@ export type Database = {
           },
         ]
       }
+      listing_purchases: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          crypto_type: string
+          delivered_at: string | null
+          escrow_id: string | null
+          id: string
+          listing_id: string
+          price: number
+          seller_id: string
+          status: string
+          stock_id: string | null
+          updated_at: string
+          warranty_expires_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          crypto_type: string
+          delivered_at?: string | null
+          escrow_id?: string | null
+          id?: string
+          listing_id: string
+          price: number
+          seller_id: string
+          status?: string
+          stock_id?: string | null
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          crypto_type?: string
+          delivered_at?: string | null
+          escrow_id?: string | null
+          id?: string
+          listing_id?: string
+          price?: number
+          seller_id?: string
+          status?: string
+          stock_id?: string | null
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_purchases_escrow_id_fkey"
+            columns: ["escrow_id"]
+            isOneToOne: false
+            referencedRelation: "escrows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "account_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_purchases_stock_id_fkey"
+            columns: ["stock_id"]
+            isOneToOne: false
+            referencedRelation: "listing_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_reviews: {
+        Row: {
+          buyer_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          listing_id: string
+          purchase_id: string
+          rating: number
+          seller_id: string
+        }
+        Insert: {
+          buyer_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          purchase_id: string
+          rating: number
+          seller_id: string
+        }
+        Update: {
+          buyer_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          purchase_id?: string
+          rating?: number
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "account_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_reviews_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: true
+            referencedRelation: "listing_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_stock: {
+        Row: {
+          created_at: string
+          credentials: string
+          delivered_at: string | null
+          id: string
+          listing_id: string
+          purchase_id: string | null
+          seller_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          credentials: string
+          delivered_at?: string | null
+          id?: string
+          listing_id: string
+          purchase_id?: string | null
+          seller_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: string
+          delivered_at?: string | null
+          id?: string
+          listing_id?: string
+          purchase_id?: string | null
+          seller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_stock_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "account_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -626,7 +854,9 @@ export type Database = {
           positive_ratings: number | null
           telegram_chat_id: string | null
           telegram_username: string | null
+          total_sales: number
           updated_at: string
+          verified_seller: boolean
         }
         Insert: {
           avatar_url?: string | null
@@ -639,7 +869,9 @@ export type Database = {
           positive_ratings?: number | null
           telegram_chat_id?: string | null
           telegram_username?: string | null
+          total_sales?: number
           updated_at?: string
+          verified_seller?: boolean
         }
         Update: {
           avatar_url?: string | null
@@ -652,7 +884,9 @@ export type Database = {
           positive_ratings?: number | null
           telegram_chat_id?: string | null
           telegram_username?: string | null
+          total_sales?: number
           updated_at?: string
+          verified_seller?: boolean
         }
         Relationships: []
       }
@@ -881,6 +1115,15 @@ export type Database = {
           contract_address: string
           decimals: number
           symbol: string
+        }[]
+      }
+      get_seller_stats: {
+        Args: { _seller_id: string }
+        Returns: {
+          avg_rating: number
+          review_count: number
+          total_sales: number
+          verified: boolean
         }[]
       }
       get_walletconnect_project_id: { Args: never; Returns: string }
