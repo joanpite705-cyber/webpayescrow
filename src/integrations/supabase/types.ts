@@ -597,6 +597,27 @@ export type Database = {
           },
         ]
       }
+      keepalive_pings: {
+        Row: {
+          created_at: string
+          id: string
+          source: string
+          stats: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source?: string
+          stats?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source?: string
+          stats?: Json
+        }
+        Relationships: []
+      }
       listing_purchases: {
         Row: {
           buyer_id: string
