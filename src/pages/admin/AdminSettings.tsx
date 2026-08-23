@@ -90,6 +90,26 @@ export default function AdminSettings() {
         <Settings className="h-6 w-6 text-primary" /> Platform Settings
       </h1>
       <div className="max-w-2xl space-y-6">
+        <div className="glass-card p-6 sm:p-8">
+          <h2 className="font-semibold mb-3 flex items-center gap-2">
+            <HeartPulse className="h-5 w-5 text-success" /> Backend Keepalive
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            A scheduled job pings the backend every 24 hours so the database never goes idle/paused.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-sm">
+              Last ping:{" "}
+              <span className="font-medium">
+                {lastPing?.created_at ? new Date(lastPing.created_at).toLocaleString() : "never"}
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={runPing} disabled={pinging} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${pinging ? "animate-spin" : ""}`} /> Ping now
+            </Button>
+          </div>
+        </div>
+
         <div className="glass-card p-8">
           <h2 className="font-semibold mb-5 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" /> Web3 Keys
