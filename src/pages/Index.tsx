@@ -32,7 +32,7 @@ export default function Index() {
         <div className="container flex h-14 md:h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <Shield className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-            <span className="text-lg md:text-xl font-bold gradient-text">EscrowBot</span>
+            <span className="text-lg md:text-xl font-bold text-primary">EscrowBot</span>
           </Link>
           <div className="flex items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
@@ -56,7 +56,7 @@ export default function Index() {
         <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 md:mb-6">
           Trade Digital Goods
           <br />
-          <span className="gradient-text">With Confidence</span>
+          <span className="text-primary">With Confidence</span>
         </h1>
         <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 md:mb-10">
           Buy and sell accounts, files, and digital assets safely. Our escrow system protects both buyers and sellers with admin-verified payments.
@@ -92,7 +92,7 @@ export default function Index() {
       </section>
 
       <section className="container py-10 md:py-16 px-4">
-        <div className="glass-card border-destructive/30 bg-gradient-to-br from-destructive/5 to-warning/5 p-6 md:p-10 text-center">
+        <div className="glass-card border-destructive/30 p-6 md:p-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium mb-4">
             <AlertTriangle className="h-3.5 w-3.5" /> Community Protection
           </div>
@@ -136,7 +136,7 @@ export default function Index() {
             { step: "04", title: "Get Confirmed", desc: "Admin verifies and releases goods" },
           ].map((s) => (
             <div key={s.step} className="text-center">
-              <div className="text-2xl md:text-4xl font-bold gradient-text mb-2 md:mb-3">{s.step}</div>
+              <div className="text-2xl md:text-4xl font-bold text-primary mb-2 md:mb-3">{s.step}</div>
               <h4 className="font-semibold text-sm md:text-base mb-1 md:mb-2">{s.title}</h4>
               <p className="text-xs md:text-sm text-muted-foreground">{s.desc}</p>
             </div>
