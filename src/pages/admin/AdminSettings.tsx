@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Settings, Save, Percent, Link2, ShieldAlert, KeyRound } from "lucide-react";
+import { Settings, Save, Percent, Link2, ShieldAlert, KeyRound, HeartPulse, RefreshCw } from "lucide-react";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<any>(null);
@@ -14,8 +14,29 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
   const [keys, setKeys] = useState({ walletconnect_project_id: "", alchemy_api_key: "" });
   const [savingKeys, setSavingKeys] = useState(false);
+  const [lastPing, setLastPing] = useState<any>(null);
+  const [pinging, setPinging] = useState(false);
 
-  useEffect(() => { fetchSettings(); fetchKeys(); }, []);
+  useEffect(() => { fetchSettings(); fetchKeys(); fetchPing(); }, []);
+
+  const fetchPing = async () => {
+    const { data } = await (supabase as any)
+      .from("keepalive_pings")
+      .select("created_at, source, stats")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLastPing(data || null);
+  };
+
+  const runPing = async () => {
+    setPinging(true);
+    const { error } = await supabase.functions.invoke("keepalive");
+    setPinging(false);
+    if (error) toast.error(error.message);
+    else { toast.success("Keepalive ping sent"); fetchPing(); }
+  };
+
 
   const fetchSettings = async () => {
     const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle();
@@ -69,6 +90,26 @@ export default function AdminSettings() {
         <Settings className="h-6 w-6 text-primary" /> Platform Settings
       </h1>
       <div className="max-w-2xl space-y-6">
+        <div className="glass-card p-6 sm:p-8">
+          <h2 className="font-semibold mb-3 flex items-center gap-2">
+            <HeartPulse className="h-5 w-5 text-success" /> Backend Keepalive
+          </h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            A scheduled job pings the backend every 24 hours so the database never goes idle/paused.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-sm">
+              Last ping:{" "}
+              <span className="font-medium">
+                {lastPing?.created_at ? new Date(lastPing.created_at).toLocaleString() : "never"}
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={runPing} disabled={pinging} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${pinging ? "animate-spin" : ""}`} /> Ping now
+            </Button>
+          </div>
+        </div>
+
         <div className="glass-card p-8">
           <h2 className="font-semibold mb-5 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" /> Web3 Keys
