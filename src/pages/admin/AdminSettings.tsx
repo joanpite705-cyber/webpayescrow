@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Settings, Save, Percent, Link2, ShieldAlert, KeyRound } from "lucide-react";
+import { Settings, Save, Percent, Link2, ShieldAlert, KeyRound, HeartPulse, RefreshCw } from "lucide-react";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<any>(null);
@@ -14,8 +14,29 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
   const [keys, setKeys] = useState({ walletconnect_project_id: "", alchemy_api_key: "" });
   const [savingKeys, setSavingKeys] = useState(false);
+  const [lastPing, setLastPing] = useState<any>(null);
+  const [pinging, setPinging] = useState(false);
 
-  useEffect(() => { fetchSettings(); fetchKeys(); }, []);
+  useEffect(() => { fetchSettings(); fetchKeys(); fetchPing(); }, []);
+
+  const fetchPing = async () => {
+    const { data } = await (supabase as any)
+      .from("keepalive_pings")
+      .select("created_at, source, stats")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLastPing(data || null);
+  };
+
+  const runPing = async () => {
+    setPinging(true);
+    const { error } = await supabase.functions.invoke("keepalive");
+    setPinging(false);
+    if (error) toast.error(error.message);
+    else { toast.success("Keepalive ping sent"); fetchPing(); }
+  };
+
 
   const fetchSettings = async () => {
     const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle();
