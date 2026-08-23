@@ -136,7 +136,7 @@ export default function Index() {
             { step: "04", title: "Get Confirmed", desc: "Admin verifies and releases goods" },
           ].map((s) => (
             <div key={s.step} className="text-center">
-              <div className="text-2xl md:text-4xl font-bold gradient-text mb-2 md:mb-3">{s.step}</div>
+              <div className="text-2xl md:text-4xl font-bold text-primary mb-2 md:mb-3">{s.step}</div>
               <h4 className="font-semibold text-sm md:text-base mb-1 md:mb-2">{s.title}</h4>
               <p className="text-xs md:text-sm text-muted-foreground">{s.desc}</p>
             </div>
