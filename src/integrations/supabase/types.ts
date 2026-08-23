@@ -965,6 +965,131 @@ export type Database = {
         }
         Relationships: []
       }
+      store_orders: {
+        Row: {
+          amount: number
+          buyer_email: string
+          created_at: string
+          crypto_amount: number | null
+          crypto_name: string
+          currency: string
+          delivered_at: string | null
+          delivered_content: string | null
+          id: string
+          network: string
+          payment_address: string
+          product_id: string
+          product_title: string
+          quantity: number
+          status: string
+          tx_reference: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          buyer_email: string
+          created_at?: string
+          crypto_amount?: number | null
+          crypto_name: string
+          currency?: string
+          delivered_at?: string | null
+          delivered_content?: string | null
+          id?: string
+          network: string
+          payment_address: string
+          product_id: string
+          product_title: string
+          quantity?: number
+          status?: string
+          tx_reference?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          buyer_email?: string
+          created_at?: string
+          crypto_amount?: number | null
+          crypto_name?: string
+          currency?: string
+          delivered_at?: string | null
+          delivered_content?: string | null
+          id?: string
+          network?: string
+          payment_address?: string
+          product_id?: string
+          product_title?: string
+          quantity?: number
+          status?: string
+          tx_reference?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "store_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_products: {
+        Row: {
+          category: string
+          created_at: string
+          currency: string
+          delivery_content: string | null
+          delivery_type: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          price: number
+          sort_order: number
+          stock: number
+          title: string
+          unlimited_stock: boolean
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          currency?: string
+          delivery_content?: string | null
+          delivery_type?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          price?: number
+          sort_order?: number
+          stock?: number
+          title: string
+          unlimited_stock?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          currency?: string
+          delivery_content?: string | null
+          delivery_type?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          price?: number
+          sort_order?: number
+          stock?: number
+          title?: string
+          unlimited_stock?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sweep_jobs: {
         Row: {
           amount: number | null
@@ -1114,7 +1239,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_store_order: {
+        Args: {
+          _buyer_email: string
+          _product_id: string
+          _quantity?: number
+          _wallet_id: string
+        }
+        Returns: string
+      }
       get_bot_username: { Args: never; Returns: string }
+      get_payment_wallets: {
+        Args: never
+        Returns: {
+          crypto_name: string
+          id: string
+          network: string
+          wallet_address: string
+        }[]
+      }
       get_public_chains: {
         Args: never
         Returns: {
@@ -1147,6 +1290,57 @@ export type Database = {
           verified: boolean
         }[]
       }
+      get_store_order: {
+        Args: { _id: string }
+        Returns: {
+          amount: number
+          buyer_email: string
+          created_at: string
+          crypto_name: string
+          currency: string
+          delivered_at: string
+          delivered_content: string
+          id: string
+          network: string
+          payment_address: string
+          product_id: string
+          product_title: string
+          quantity: number
+          status: string
+        }[]
+      }
+      get_store_product: {
+        Args: { _id: string }
+        Returns: {
+          category: string
+          currency: string
+          delivery_type: string
+          description: string
+          id: string
+          image_url: string
+          price: number
+          stock: number
+          title: string
+          unlimited_stock: boolean
+        }[]
+      }
+      get_store_products: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          currency: string
+          delivery_type: string
+          description: string
+          id: string
+          image_url: string
+          price: number
+          sort_order: number
+          stock: number
+          title: string
+          unlimited_stock: boolean
+        }[]
+      }
       get_walletconnect_project_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -1158,6 +1352,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_moderator: { Args: never; Returns: boolean }
       is_escrow_party: { Args: { _escrow_id: string }; Returns: boolean }
+      mark_store_order_paid: {
+        Args: { _id: string; _tx_reference?: string }
+        Returns: undefined
+      }
       search_scam_reports: {
         Args: { _handle: string }
         Returns: {
