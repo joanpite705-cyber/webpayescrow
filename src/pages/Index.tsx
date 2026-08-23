@@ -32,7 +32,7 @@ export default function Index() {
         <div className="container flex h-14 md:h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <Shield className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-            <span className="text-lg md:text-xl font-bold gradient-text">EscrowBot</span>
+            <span className="text-lg md:text-xl font-bold text-primary">EscrowBot</span>
           </Link>
           <div className="flex items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
