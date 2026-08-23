@@ -92,7 +92,7 @@ export default function Index() {
       </section>
 
       <section className="container py-10 md:py-16 px-4">
-        <div className="glass-card border-destructive/30 bg-gradient-to-br from-destructive/5 to-warning/5 p-6 md:p-10 text-center">
+        <div className="glass-card border-destructive/30 p-6 md:p-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium mb-4">
             <AlertTriangle className="h-3.5 w-3.5" /> Community Protection
           </div>
