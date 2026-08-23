@@ -56,7 +56,7 @@ export default function Index() {
         <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 md:mb-6">
           Trade Digital Goods
           <br />
-          <span className="gradient-text">With Confidence</span>
+          <span className="text-primary">With Confidence</span>
         </h1>
         <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 md:mb-10">
           Buy and sell accounts, files, and digital assets safely. Our escrow system protects both buyers and sellers with admin-verified payments.
