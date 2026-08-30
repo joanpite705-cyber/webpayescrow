@@ -84,8 +84,13 @@ export default function Index() {
             </Button>
           </Link>
           <Link to="/marketplace">
-            <Button size="lg" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
+            <Button size="lg" variant="outline" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
               Browse Accounts Market
+            </Button>
+          </Link>
+          <Link to="/store">
+            <Button size="lg" className="gap-2 text-sm md:text-base px-6 md:px-8 w-full sm:w-auto">
+              Digital Goods Store
             </Button>
           </Link>
         </div>
