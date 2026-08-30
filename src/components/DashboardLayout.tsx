@@ -25,6 +25,7 @@ const adminNav = [
   { to: "/admin/payments", icon: Wallet, labelKey: "payments" },
   { to: "/admin/disputes", icon: AlertTriangle, labelKey: "disputes" },
   { to: "/admin/wallets", icon: Wallet, labelKey: "crypto_wallets" },
+  { to: "/admin/store", icon: Store, labelKey: "store" },
   { to: "/admin/balances", icon: Coins, labelKey: "balances" },
   { to: "/admin/chains", icon: Network, labelKey: "chains" },
   { to: "/admin/sweeps", icon: ArrowDownToLine, labelKey: "sweeps" },

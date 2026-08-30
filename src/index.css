@@ -6,56 +6,53 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
+    /* Legacy forum theme: low-saturation slate, flat surfaces */
+    --background: 215 16% 11%;
+    --foreground: 210 12% 88%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 96%;
+    --card: 215 15% 14%;
+    --card-foreground: 210 12% 88%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 215 15% 14%;
+    --popover-foreground: 210 12% 88%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 205 32% 48%;
+    --primary-foreground: 210 20% 97%;
 
-    --secondary: 222 47% 14%;
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 215 14% 18%;
+    --secondary-foreground: 210 12% 84%;
 
-    --muted: 222 30% 16%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 215 12% 20%;
+    --muted-foreground: 215 10% 60%;
 
-    --accent: 160 84% 39%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 168 22% 42%;
+    --accent-foreground: 210 20% 97%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 45% 45%;
+    --destructive-foreground: 210 20% 97%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 217 91% 60%;
+    --border: 215 12% 22%;
+    --input: 215 12% 22%;
+    --ring: 205 32% 48%;
 
-    --radius: 0.75rem;
+    --radius: 0.25rem;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    --warning: 38 45% 48%;
+    --warning-foreground: 0 0% 100%;
 
-    --success: 160 84% 39%;
+    --success: 145 25% 40%;
     --success-foreground: 0 0% 100%;
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 14%;
-    --sidebar-accent-foreground: 210 40% 90%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 215 16% 13%;
+    --sidebar-foreground: 210 12% 84%;
+    --sidebar-primary: 205 32% 48%;
+    --sidebar-primary-foreground: 210 20% 97%;
+    --sidebar-accent: 215 14% 18%;
+    --sidebar-accent-foreground: 210 12% 84%;
+    --sidebar-border: 215 12% 22%;
+    --sidebar-ring: 205 32% 48%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(260 80% 60%));
-    --gradient-accent: linear-gradient(135deg, hsl(160 84% 39%), hsl(180 70% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 10%), hsl(222 47% 7%));
-    --shadow-glow: 0 0 30px -5px hsl(217 91% 60% / 0.3);
-    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 1px 0 0 hsl(215 12% 24%);
   }
 }
 
@@ -71,26 +68,26 @@
 }
 
 @layer utilities {
+  /* Flat forum-style panel */
+  .panel {
+    @apply bg-card border border-border rounded-md;
+  }
+
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
-    box-shadow: var(--shadow-card);
+    @apply bg-card border border-border rounded-md;
   }
 
   .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-foreground;
   }
 
   .glow-border {
-    @apply border border-primary/30;
-    box-shadow: var(--shadow-glow);
+    @apply border border-border;
   }
 
-  .status-pending { @apply bg-warning/20 text-warning border-warning/30; }
-  .status-active { @apply bg-primary/20 text-primary border-primary/30; }
-  .status-completed { @apply bg-accent/20 text-accent border-accent/30; }
-  .status-disputed { @apply bg-destructive/20 text-destructive border-destructive/30; }
+  .status-pending { @apply bg-warning/15 text-warning border-warning/30; }
+  .status-active { @apply bg-primary/15 text-primary border-primary/30; }
+  .status-completed { @apply bg-success/15 text-success border-success/30; }
+  .status-disputed { @apply bg-destructive/15 text-destructive border-destructive/30; }
   .status-cancelled { @apply bg-muted text-muted-foreground border-border; }
 }
