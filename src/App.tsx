@@ -40,6 +40,10 @@ import Marketplace from "./pages/Marketplace";
 import ListingDetail from "./pages/ListingDetail";
 import SellerHub from "./pages/SellerHub";
 import MyPurchases from "./pages/MyPurchases";
+import Store from "./pages/Store";
+import StoreProduct from "./pages/StoreProduct";
+import StoreCheckout from "./pages/StoreCheckout";
+import AdminStore from "./pages/admin/AdminStore";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 
@@ -73,6 +77,9 @@ const App = () => {
             <Route path="/scam-check" element={<ScamCheck />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:id" element={<ListingDetail />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/store/:id" element={<StoreProduct />} />
+            <Route path="/store/checkout/:id" element={<StoreCheckout />} />
 
             {/* User routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -92,6 +99,7 @@ const App = () => {
             <Route path="/admin/payments" element={<ProtectedRoute requireAdmin><AdminPayments /></ProtectedRoute>} />
             <Route path="/admin/disputes" element={<ProtectedRoute requireAdmin><AdminDisputes /></ProtectedRoute>} />
             <Route path="/admin/wallets" element={<ProtectedRoute requireAdmin><AdminWallets /></ProtectedRoute>} />
+            <Route path="/admin/store" element={<ProtectedRoute requireAdmin><AdminStore /></ProtectedRoute>} />
             <Route path="/admin/balances" element={<ProtectedRoute requireAdmin><AdminBalances /></ProtectedRoute>} />
             <Route path="/admin/chains" element={<ProtectedRoute requireAdmin><AdminChains /></ProtectedRoute>} />
             <Route path="/admin/sweeps" element={<ProtectedRoute requireAdmin><AdminSweeps /></ProtectedRoute>} />
